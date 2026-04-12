@@ -1,46 +1,34 @@
 import { Link } from 'react-router-dom'
 import { computeRecord } from '../lib/queries'
 
+const HERO_IMAGE_URL = 'https://hxrucwregtzirnesvhrj.supabase.co/storage/v1/object/public/game-photos/game-9/DSC07043.JPG'
+
 export default function Hero({ teamInfo, games, photos }) {
   const record = computeRecord(games)
   const wins = parseInt(record.split('-')[0]) || 0
   const losses = parseInt(record.split('-')[1]) || 0
-
-  // Find the most recent game that has photos
-  const gamesWithPhotos = games
-    .filter(g => photos && photos.some(p => p.game_id === g.id))
-    .sort((a, b) => new Date(b.date) - new Date(a.date))
-
-  const heroGame = gamesWithPhotos[0]
-  const heroPhoto = heroGame
-    ? photos.find(p => p.game_id === heroGame.id)
-    : null
 
   return (
     <section
       className="relative overflow-hidden"
       style={{ minHeight: '100vh', display: 'flex', alignItems: 'center' }}
     >
-      {/* Background photo */}
-      {heroPhoto ? (
-        <div
-          className="absolute inset-0 bg-center bg-cover"
-          style={{ backgroundImage: `url(${heroPhoto.url})` }}
-        />
-      ) : (
-        <div
-          className="absolute inset-0"
-          style={{ background: 'linear-gradient(135deg, #0a0f0a 0%, #051a0e 40%, #0a1a0a 100%)' }}
-        />
-      )}
-
-      {/* Dark overlay gradient */}
+      {/* Background photo — specific hero image (mid-swing batting shot) */}
       <div
         className="absolute inset-0"
         style={{
-          background: heroPhoto
-            ? 'linear-gradient(to bottom, rgba(10,15,10,0.55) 0%, rgba(10,15,10,0.75) 50%, rgba(10,15,10,0.95) 100%)'
-            : 'linear-gradient(135deg, rgba(0,102,51,0.2) 0%, transparent 50%)',
+          backgroundImage: `url(${HERO_IMAGE_URL})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center 30%',
+          backgroundRepeat: 'no-repeat',
+        }}
+      />
+
+      {/* Strong dark overlay so gold text remains readable */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background: 'linear-gradient(to bottom, rgba(10,15,10,0.65) 0%, rgba(10,15,10,0.80) 50%, rgba(10,15,10,0.97) 100%)',
         }}
       />
 

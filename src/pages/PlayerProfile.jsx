@@ -159,12 +159,24 @@ export default function PlayerProfile({ data }) {
       : `Class of ${player.grad_year}`
     : null
 
-  // Games with photos for gallery section
-  const gamesWithPhotos = games
-    .filter((g) => photos.some((p) => p.game_id === g.id))
-    .slice(0, 8)
+  // Filter photos tagged with this player
+  const playerPhotos = photos.filter(
+    (p) => p.player_ids && p.player_ids.includes(player.id)
+  )
 
-  const getGamePhotos = (gameId) => photos.filter((p) => p.game_id === gameId)
+  // Group player photos by game_id
+  const playerPhotosByGame = playerPhotos.reduce((acc, photo) => {
+    if (!acc[photo.game_id]) acc[photo.game_id] = []
+    acc[photo.game_id].push(photo)
+    return acc
+  }, {})
+
+  // Get the games that have player-specific photos, preserving game order
+  const gamesWithPlayerPhotos = games.filter(
+    (g) => playerPhotosByGame[g.id] && playerPhotosByGame[g.id].length > 0
+  )
+
+  const getPlayerGamePhotos = (gameId) => playerPhotosByGame[gameId] || []
 
   return (
     <div style={{ backgroundColor: '#0a0f0a', minHeight: '100vh' }}>
@@ -398,41 +410,50 @@ export default function PlayerProfile({ data }) {
           </div>
         )}
 
-        {/* Game Photos Section */}
-        {gamesWithPhotos.length > 0 && (
-          <div>
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className="w-1 h-7 rounded" style={{ backgroundColor: '#FFD700' }} />
-                <h2 className="font-display font-black uppercase tracking-widest text-lg" style={{ color: '#FFD700' }}>
-                  📷 Game Photos
-                </h2>
-              </div>
-              <Link
-                to="/gallery"
-                className="font-display font-bold uppercase tracking-widest text-sm"
-                style={{ color: '#4ade80' }}
-              >
-                Full Gallery →
-              </Link>
+        {/* Game Photos Section — player-specific */}
+        <div>
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div className="w-1 h-7 rounded" style={{ backgroundColor: '#FFD700' }} />
+              <h2 className="font-display font-black uppercase tracking-widest text-lg" style={{ color: '#FFD700' }}>
+                📷 Action Shots
+              </h2>
             </div>
+            <Link
+              to="/gallery"
+              className="font-display font-bold uppercase tracking-widest text-sm"
+              style={{ color: '#4ade80' }}
+            >
+              Full Gallery →
+            </Link>
+          </div>
 
-            <p className="text-gray-600 text-sm mb-6">
-              Browse photos from the 2026 season. Player-specific photo tagging coming soon.
-            </p>
-
+          {gamesWithPlayerPhotos.length > 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-              {gamesWithPhotos.map((game) => (
+              {gamesWithPlayerPhotos.map((game) => (
                 <GameGalleryCard
                   key={game.id}
                   game={game}
-                  photos={getGamePhotos(game.id)}
+                  photos={getPlayerGamePhotos(game.id)}
                   onPhotoClick={(g, p, i) => setLightbox({ game: g, photos: p, index: i })}
                 />
               ))}
             </div>
-          </div>
-        )}
+          ) : (
+            <div
+              className="rounded-2xl p-10 text-center border"
+              style={{ backgroundColor: '#111811', borderColor: '#1e2e1e' }}
+            >
+              <div className="text-4xl mb-3">📸</div>
+              <div className="font-display font-bold text-gray-400 uppercase tracking-widest text-sm mb-1">
+                Action shots coming soon!
+              </div>
+              <p className="text-gray-600 text-sm">
+                Photos featuring this player will appear here once tagged.
+              </p>
+            </div>
+          )}
+        </div>
 
         {/* Browse other players */}
         <div
