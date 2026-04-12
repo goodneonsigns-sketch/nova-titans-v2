@@ -6,8 +6,8 @@
   --color-brand-green-light: #007a3d;
   --color-brand-gold: #FFD700;
   --color-brand-gold-dark: #e6c200;
-  --font-family-sans: 'Inter', system-ui, sans-serif;
-  --font-family-display: 'Oswald', sans-serif;
+  --font-family-sans: 'Barlow', system-ui, sans-serif;
+  --font-family-display: 'Bebas Neue', sans-serif;
 }
 
 @layer base {
