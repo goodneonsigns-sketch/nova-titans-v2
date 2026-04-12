@@ -6,6 +6,7 @@ import Roster from './pages/Roster'
 import Gallery from './pages/Gallery'
 import SchedulePage from './pages/SchedulePage'
 import StatsPage from './pages/StatsPage'
+import PlayerProfile from './pages/PlayerProfile'
 import { fetchAllData } from './lib/queries'
 
 function LoadingScreen() {
@@ -94,6 +95,7 @@ export default function App() {
           <Route path="/gallery" element={<Gallery data={pageData} />} />
           <Route path="/schedule" element={<SchedulePage data={pageData} />} />
           <Route path="/stats" element={<StatsPage data={pageData} />} />
+          <Route path="/player/:id" element={<PlayerProfile data={pageData} />} />
         </Routes>
       </Layout>
     </BrowserRouter>

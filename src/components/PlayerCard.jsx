@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom'
+
 export default function PlayerCard({ player, onClick }) {
   const initials = player.name
     .split(' ')
@@ -19,9 +21,9 @@ export default function PlayerCard({ player, onClick }) {
     : ''
 
   return (
-    <button
-      onClick={() => onClick(player)}
-      className="group text-left w-full transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 rounded-xl"
+    <Link
+      to={`/player/${player.id}`}
+      className="group text-left w-full block transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 rounded-xl"
     >
       <div className="card p-4 group-hover:border-yellow-500/50">
         <div className="flex items-center gap-4">
@@ -82,8 +84,13 @@ export default function PlayerCard({ player, onClick }) {
               </div>
             )}
           </div>
+
+          {/* Arrow hint */}
+          <div className="shrink-0 text-gray-600 group-hover:text-yellow-400 transition-colors text-sm">
+            ›
+          </div>
         </div>
       </div>
-    </button>
+    </Link>
   )
 }
