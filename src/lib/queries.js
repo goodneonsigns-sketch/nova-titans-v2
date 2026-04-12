@@ -20,7 +20,7 @@ export async function fetchAllData() {
     supabase.from('players').select('*').order('number', { ascending: true }),
     supabase.from('batting_stats').select('*'),
     supabase.from('pitching_stats').select('*'),
-    supabase.from('photos').select('*').order('sort_order', { ascending: true }),
+    supabase.from('photos').select('id,game_id,filename,url,sort_order').order('sort_order', { ascending: true }).limit(5000),
   ])
 
   // Convert team_info array to object
