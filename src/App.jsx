@@ -47,6 +47,7 @@ const EMPTY_DATA = {
   battingStats: [],
   pitchingStats: [],
   photos: [],
+  articles: [],
   errors: [],
 }
 

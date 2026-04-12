@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import Hero from '../components/Hero'
 import Lightbox from '../components/Lightbox'
 import { getBattingLeaders, getPitchingLeaders, computeRecord } from '../lib/queries'
+import highlightsData from '../../content/highlights.json'
 
 // ─── Animated Counter ────────────────────────────────────────────────────────
 function AnimatedCounter({ target, decimals = 0, prefix = '', suffix = '' }) {
@@ -196,7 +197,7 @@ function CarouselPlayerCard({ player, battingStats, pitchingStats, season, navig
 
 // ─── Main Home Component ──────────────────────────────────────────────────────
 export default function Home({ data }) {
-  const { seasons, games, players, battingStats, pitchingStats, photos } = data
+  const { seasons, games, players, battingStats, pitchingStats, photos, articles = [] } = data
   const navigate = useNavigate()
 
   const currentSeason = seasons.find((s) => s.is_current) || seasons[0]
@@ -720,7 +721,411 @@ export default function Home({ data }) {
         </section>
       )}
 
-      {/* ── SECTION 6: Schedule Strip ────────────────────────────── */}
+      {/* ── SECTION 6: News & Highlights ─────────────────────────── */}
+      {(() => {
+        // Merge: DB articles first, then fallback to highlights.json news2026
+        const dbArticles = articles.slice(0, 4)
+        const jsonArticles = highlightsData.news2026 || []
+        // Use DB if available, else fallback to JSON
+        const displayArticles = dbArticles.length > 0
+          ? dbArticles
+          : jsonArticles.slice(0, 4).map(a => ({
+              id: a.url,
+              title: a.title,
+              date: a.date,
+              source: a.source,
+              summary: a.summary,
+              url: a.url,
+              video_url: a.videoUrl || null,
+            }))
+
+        if (displayArticles.length === 0) return null
+
+        return (
+          <section
+            className="py-16 border-t"
+            style={{ borderColor: 'rgba(0,102,51,0.3)' }}
+          >
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="flex items-center gap-3 mb-8">
+                <div className="w-1 h-8 rounded" style={{ backgroundColor: '#FFD700' }} />
+                <h2 className="font-display font-black uppercase tracking-widest text-xl" style={{ color: '#FFD700' }}>
+                  News &amp; Highlights
+                </h2>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                {displayArticles.map((article) => {
+                  const formattedDate = article.date
+                    ? new Date(article.date + 'T12:00:00').toLocaleDateString('en-US', {
+                        month: 'short', day: 'numeric', year: 'numeric',
+                      })
+                    : ''
+
+                  // Extract YouTube video ID
+                  const getYouTubeId = (url) => {
+                    if (!url) return null
+                    const m = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/))([^&?/]+)/)
+                    return m ? m[1] : null
+                  }
+                  const ytId = getYouTubeId(article.video_url)
+
+                  return (
+                    <a
+                      key={article.id || article.url}
+                      href={article.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex flex-col rounded-2xl overflow-hidden border transition-all duration-200 hover:-translate-y-1 hover:border-yellow-400/40 group"
+                      style={{ backgroundColor: '#111811', borderColor: '#1e2e1e', textDecoration: 'none' }}
+                    >
+                      {/* YouTube embed / thumbnail */}
+                      {ytId && (
+                        <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
+                          <img
+                            src={`https://img.youtube.com/vi/${ytId}/hqdefault.jpg`}
+                            alt={article.title}
+                            className="absolute inset-0 w-full h-full object-cover"
+                          />
+                          {/* Play button overlay */}
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/40 group-hover:bg-black/20 transition-colors">
+                            <div
+                              className="w-12 h-12 rounded-full flex items-center justify-center"
+                              style={{ backgroundColor: '#FFD700' }}
+                            >
+                              <svg width="20" height="20" viewBox="0 0 20 20" fill="#0a0f0a">
+                                <polygon points="6,3 17,10 6,17" />
+                              </svg>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Card body */}
+                      <div className="flex flex-col flex-1 p-5">
+                        {/* Source + date */}
+                        <div className="flex items-center gap-2 mb-3">
+                          {article.source && (
+                            <span
+                              className="text-xs font-bold px-2 py-0.5 rounded uppercase tracking-wider"
+                              style={{ backgroundColor: 'rgba(0,102,51,0.4)', color: '#4ade80' }}
+                            >
+                              {article.source}
+                            </span>
+                          )}
+                          {formattedDate && (
+                            <span className="text-xs text-gray-500">{formattedDate}</span>
+                          )}
+                        </div>
+
+                        {/* Title */}
+                        <h3
+                          className="font-display font-bold text-base leading-snug mb-3 group-hover:opacity-90 transition-opacity"
+                          style={{ color: '#FFD700' }}
+                        >
+                          {article.title}
+                        </h3>
+
+                        {/* Summary snippet */}
+                        {article.summary && (
+                          <p className="text-gray-400 text-sm leading-relaxed flex-1 line-clamp-3">
+                            {article.summary}
+                          </p>
+                        )}
+
+                        {/* Read more */}
+                        <div
+                          className="mt-4 text-xs font-bold uppercase tracking-widest"
+                          style={{ color: '#006633' }}
+                        >
+                          Read more →
+                        </div>
+                      </div>
+                    </a>
+                  )
+                })}
+              </div>
+            </div>
+          </section>
+        )
+      })()}
+
+      {/* ── SECTION 7: Titans Legacy ──────────────────────────────── */}
+      {(() => {
+        const { programHistory, championships, mcQuaidQuote, seasonPreview } = highlightsData
+        // Key championships to highlight as badges
+        const featuredChamps = championships.filter(c =>
+          [2005, 2004, 2023, 2017, 2002, 2000, 1991].includes(c.year)
+        )
+
+        return (
+          <section
+            className="py-16 border-t"
+            style={{
+              borderColor: 'rgba(0,102,51,0.3)',
+              background: 'linear-gradient(180deg, #0a0f0a 0%, #060c06 100%)',
+            }}
+          >
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              {/* Section header */}
+              <div className="flex items-center gap-3 mb-10">
+                <div className="w-1 h-8 rounded" style={{ backgroundColor: '#FFD700' }} />
+                <h2 className="font-display font-black uppercase tracking-widest text-xl" style={{ color: '#FFD700' }}>
+                  Titans Legacy
+                </h2>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                {/* Left: History */}
+                <div>
+                  <h3
+                    className="font-display font-black uppercase text-3xl sm:text-4xl leading-tight mb-5"
+                    style={{ color: '#ffffff' }}
+                  >
+                    Nearly 50 Years of{' '}
+                    <span style={{ color: '#FFD700' }}>Excellence</span>
+                  </h3>
+
+                  {/* Coach McQuaid quote */}
+                  <blockquote
+                    className="rounded-2xl p-6 mb-6 border-l-4"
+                    style={{ backgroundColor: '#111811', borderLeftColor: '#FFD700' }}
+                  >
+                    <p className="text-gray-200 text-base leading-relaxed italic mb-3">
+                      &ldquo;{mcQuaidQuote}&rdquo;
+                    </p>
+                    <footer className="text-sm font-bold uppercase tracking-widest" style={{ color: '#FFD700' }}>
+                      — Coach Pat McQuaid
+                      <span className="text-gray-500 font-normal normal-case tracking-normal ml-2">
+                        FHSAA Hall of Fame · Nova HS '68 · Head Coach 1974–2024
+                      </span>
+                    </footer>
+                  </blockquote>
+
+                  {/* Season preview */}
+                  <p className="text-gray-400 leading-relaxed mb-6">
+                    {seasonPreview}
+                  </p>
+
+                  {/* Current coach + facility */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div
+                      className="rounded-xl p-4 border"
+                      style={{ backgroundColor: '#111811', borderColor: '#1e2e1e' }}
+                    >
+                      <div className="text-xs uppercase tracking-widest text-gray-500 mb-1">Head Coach</div>
+                      <div className="font-display font-bold text-white text-base">Brian Luebkert</div>
+                      <div className="text-xs text-gray-500 mt-0.5">2026 Season</div>
+                    </div>
+                    <div
+                      className="rounded-xl p-4 border"
+                      style={{ backgroundColor: '#111811', borderColor: '#1e2e1e' }}
+                    >
+                      <div className="text-xs uppercase tracking-widest text-gray-500 mb-1">Facility</div>
+                      <div className="font-display font-bold text-white text-sm leading-snug">
+                        1,000-Seat Stadium
+                      </div>
+                      <div className="text-xs text-gray-500 mt-0.5">Indoor cages · Digital scoreboard</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right: Championships + Alumni */}
+                <div>
+                  {/* Championship badges */}
+                  <div className="mb-8">
+                    <div className="text-xs uppercase tracking-widest text-gray-500 mb-4">Championship Titles</div>
+                    <div className="flex flex-wrap gap-2">
+                      {featuredChamps.map((c) => (
+                        <span
+                          key={c.year}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold font-display uppercase tracking-wider border"
+                          style={{
+                            backgroundColor: 'rgba(255,215,0,0.1)',
+                            borderColor: 'rgba(255,215,0,0.4)',
+                            color: '#FFD700',
+                          }}
+                        >
+                          🏆 {c.year} · {c.title}
+                        </span>
+                      ))}
+                    </div>
+                    <div className="mt-3 text-xs text-gray-600">
+                      + {championships.length - featuredChamps.length} more district & regional titles since 1985
+                    </div>
+                  </div>
+
+                  {/* MLB Alumni */}
+                  <div>
+                    <div className="text-xs uppercase tracking-widest text-gray-500 mb-4">MLB Alumni</div>
+                    <div className="flex flex-col gap-3">
+                      {[
+                        { name: 'Michael Morse', detail: 'World Series Champion · MLB Outfielder/1B', emoji: '🌟' },
+                        { name: 'Anthony Swarzak', detail: 'MLB Pitcher · 10 Seasons', emoji: '⚾' },
+                      ].map((alum) => (
+                        <div
+                          key={alum.name}
+                          className="flex items-center gap-3 rounded-xl p-4 border"
+                          style={{ backgroundColor: '#111811', borderColor: '#1e2e1e' }}
+                        >
+                          <span className="text-2xl">{alum.emoji}</span>
+                          <div>
+                            <div className="font-display font-bold text-white text-sm">{alum.name}</div>
+                            <div className="text-xs text-gray-500">{alum.detail}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Location + district */}
+                    <div className="mt-4 rounded-xl p-4 border text-xs text-gray-500" style={{ borderColor: '#1e2e1e' }}>
+                      <span className="text-gray-400">📍 {programHistory.location}</span>
+                      <span className="mx-3 text-gray-700">·</span>
+                      <span>{programHistory.district}</span>
+                      <span className="mx-3 text-gray-700">·</span>
+                      <span>{programHistory.schoolSize}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        )
+      })()}
+
+      {/* ── SECTION 8: Senior Spotlight ───────────────────────────── */}
+      {(() => {
+        // Senior player jersey numbers (from highlights.json seniorIds)
+        const seniorNumbers = [6, 11, 25, 15]
+        const seniorMeta = {
+          6:  { nick: 'Musa', display: 'Musa Adeoye' },
+          11: { nick: 'JJ', display: 'Joseph "JJ" Cohen-Rodriguez' },
+          25: { nick: 'Ricky', display: 'Ricky Relyea' },
+          15: { nick: 'Brock', display: 'Brock Burns' },
+        }
+
+        // Match by jersey number
+        const seniors = seniorNumbers
+          .map((num) => {
+            const player = players.find((p) => p.number === num || p.number === String(num))
+            return { num, meta: seniorMeta[num], player }
+          })
+          .filter((s) => s.player || s.meta) // show even if player not in DB
+
+        return (
+          <section
+            className="py-16 border-t"
+            style={{ borderColor: 'rgba(0,102,51,0.3)' }}
+          >
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              {/* Section header */}
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-1 h-8 rounded" style={{ backgroundColor: '#FFD700' }} />
+                <h2 className="font-display font-black uppercase tracking-widest text-xl" style={{ color: '#FFD700' }}>
+                  Senior Spotlight
+                </h2>
+              </div>
+              <p className="font-display text-gray-400 text-sm uppercase tracking-widest mb-8 ml-4">
+                Class of 2026 — Honoring our Graduating Titans
+              </p>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-5">
+                {seniors.map(({ num, meta, player }) => {
+                  const name = player?.name || meta?.display || `#${num}`
+                  const position = player?.positions || ''
+                  const headshotUrl = player?.headshot_url || null
+                  const initials = name
+                    .split(' ')
+                    .map((n) => n[0])
+                    .join('')
+                    .slice(0, 2)
+                    .toUpperCase()
+                  const profileUrl = player ? `/player/${player.id}` : '#'
+
+                  return (
+                    <Link
+                      key={num}
+                      to={profileUrl}
+                      className="flex flex-col items-center gap-3 group rounded-2xl p-5 border transition-all duration-200 hover:-translate-y-1"
+                      style={{
+                        backgroundColor: '#111811',
+                        borderColor: 'rgba(255,215,0,0.35)',
+                        textDecoration: 'none',
+                      }}
+                    >
+                      {/* Headshot with gold ring */}
+                      <div
+                        className="relative rounded-full p-0.5"
+                        style={{ background: 'linear-gradient(135deg, #FFD700, #b8860b)' }}
+                      >
+                        {headshotUrl ? (
+                          <img
+                            src={headshotUrl}
+                            alt={name}
+                            className="w-20 h-20 rounded-full object-cover object-top border-2"
+                            style={{ borderColor: '#0a0f0a' }}
+                            onError={(e) => {
+                              e.target.style.display = 'none'
+                              e.target.nextSibling.style.display = 'flex'
+                            }}
+                          />
+                        ) : null}
+                        <div
+                          className="w-20 h-20 rounded-full items-center justify-center text-2xl font-bold border-2"
+                          style={{
+                            backgroundColor: '#006633',
+                            borderColor: '#0a0f0a',
+                            color: '#FFD700',
+                            display: headshotUrl ? 'none' : 'flex',
+                          }}
+                        >
+                          {initials}
+                        </div>
+
+                        {/* Jersey number badge */}
+                        <div
+                          className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full text-xs font-black flex items-center justify-center border-2"
+                          style={{ backgroundColor: '#FFD700', color: '#0a0f0a', borderColor: '#0a0f0a' }}
+                        >
+                          {num}
+                        </div>
+                      </div>
+
+                      {/* Name */}
+                      <div className="text-center">
+                        <div
+                          className="font-display font-bold text-sm leading-tight group-hover:opacity-80 transition-opacity"
+                          style={{ color: '#FFD700' }}
+                        >
+                          {meta?.display || name}
+                        </div>
+                        {position && (
+                          <div
+                            className="text-xs mt-1 px-2 py-0.5 rounded font-semibold"
+                            style={{ color: '#4ade80', backgroundColor: 'rgba(0,102,51,0.3)' }}
+                          >
+                            {position}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Senior label */}
+                      <div
+                        className="text-xs font-bold uppercase tracking-widest px-2 py-0.5 rounded-full border"
+                        style={{ color: '#FFD700', borderColor: 'rgba(255,215,0,0.4)', backgroundColor: 'rgba(255,215,0,0.08)' }}
+                      >
+                        Sr. · '26
+                      </div>
+                    </Link>
+                  )
+                })}
+              </div>
+            </div>
+          </section>
+        )
+      })()}
+
+      {/* ── SECTION 9: Schedule Strip ────────────────────────────── */}
       {games.length > 0 && (
         <section
           className="py-16 border-t"

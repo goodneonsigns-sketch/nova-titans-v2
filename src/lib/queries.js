@@ -13,6 +13,7 @@ export async function fetchAllData() {
     battingRes,
     pitchingRes,
     photosRes,
+    articlesRes,
   ] = await Promise.all([
     supabase.from('team_info').select('*'),
     supabase.from('seasons').select('*').order('year', { ascending: false }),
@@ -21,6 +22,7 @@ export async function fetchAllData() {
     supabase.from('batting_stats').select('*'),
     supabase.from('pitching_stats').select('*'),
     supabase.from('photos').select('id,game_id,filename,url,sort_order').order('sort_order', { ascending: true }).limit(5000),
+    supabase.from('articles').select('*').order('date', { ascending: false }),
   ])
 
   // Convert team_info array to object
@@ -39,6 +41,7 @@ export async function fetchAllData() {
     battingStats: battingRes.data || [],
     pitchingStats: pitchingRes.data || [],
     photos: photosRes.data || [],
+    articles: articlesRes.data || [],
     errors: [
       teamInfoRes.error,
       seasonsRes.error,
@@ -47,6 +50,7 @@ export async function fetchAllData() {
       battingRes.error,
       pitchingRes.error,
       photosRes.error,
+      // articles error is non-fatal — table may not exist yet
     ].filter(Boolean),
   }
 }

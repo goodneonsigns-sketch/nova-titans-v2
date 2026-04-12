@@ -1,0 +1,54 @@
+{
+  "programHistory": {
+    "legacy": "Nearly 50-year legacy of baseball excellence",
+    "coachMcQuaid": "FHSAA Hall of Fame Coach Pat McQuaid coached the Titans from 1974-2024. A Nova HS alum himself (Class of '68), he built the program into a South Florida powerhouse.",
+    "currentCoach": "Head Coach Brian Luebkert leads the 2026 Titans",
+    "facility": "1,000-seat stadium with indoor batting cages, fieldhouse, press box, and state-of-the-art digital scoreboard — built with community support after Hurricane Irma",
+    "mlbAlumni": ["Michael Morse (MLB World Series Champion)", "Anthony Swarzak (MLB)"],
+    "location": "3600 College Ave, Davie, FL 33314",
+    "district": "6A District 15",
+    "schoolSize": "~2,100 students, 15 varsity sports"
+  },
+  "championships": [
+    {"year": 2005, "title": "5A State Champion & National Champion"},
+    {"year": 2004, "title": "5A State Champion"},
+    {"year": 2023, "title": "District Champion"},
+    {"year": 2018, "title": "District Champion"},
+    {"year": 2017, "title": "Regional Champion & District Champion"},
+    {"year": 2016, "title": "District Champion"},
+    {"year": 2012, "title": "District Champion"},
+    {"year": 2011, "title": "District Champion"},
+    {"year": 2009, "title": "District Champion"},
+    {"year": 2003, "title": "District Champion"},
+    {"year": 2002, "title": "District Champion & Regional Champion"},
+    {"year": 2001, "title": "Regional Champion"},
+    {"year": 2000, "title": "District Champion, Regional Champion & Sectional Champion"},
+    {"year": 1999, "title": "District Champion & Regional Champion"},
+    {"year": 1998, "title": "District Champion & Regional Champion"},
+    {"year": 1995, "title": "Regional Champion"},
+    {"year": 1994, "title": "Regional Champion"},
+    {"year": 1991, "title": "District Champion, Regional Champion & Sectional Champion"},
+    {"year": 1987, "title": "District Champion & Regional Champion"},
+    {"year": 1985, "title": "District Champion"}
+  ],
+  "news2026": [
+    {
+      "title": "HSBN Honors Outgoing Nova Seniors",
+      "date": "2026-04-07",
+      "source": "Broward HSBN",
+      "url": "https://www.browardhighschoolbaseball.com/2026/04/hsbn-honors-outgoing-nova-seniors/",
+      "summary": "HSBN honors the four graduating seniors closing out their high school careers: #6 Musa Adeoye, #11 JJ Cohen-Rodriguez, #25 Ricky Relyea, and #15 Brock Burns.",
+      "seniorIds": [6, 11, 25, 15]
+    },
+    {
+      "title": "Nova On A Revenge Tour In 2026",
+      "date": "2026-01-29",
+      "source": "Broward HSBN",
+      "url": "https://www.browardhighschoolbaseball.com/2026/01/nova-on-a-revenge-tour-in-2026/",
+      "summary": "The Titans started last season 6-0 before faltering late. In 2026, they're looking to put a full season together in the quest for their first district title since 2023. Manager Brian Luebkert and team leaders share their expectations at HSBN Media Day.",
+      "videoUrl": "https://youtu.be/sjLH1aXugBw"
+    }
+  ],
+  "seasonPreview": "After starting 6-0 last season before faltering late, the 2026 Titans are on a revenge tour — chasing their first district title since 2023. Head Coach Brian Luebkert and his squad are building on a legacy that includes 2 state championships, a national title, and MLB alumni like Michael Morse.",
+  "mcQuaidQuote": "Your objective shouldn't be just to win a state championship. It should be, are you going to make the place when you leave better than when you came? Start your job like you're gonna be there forever and make it better."
+}
