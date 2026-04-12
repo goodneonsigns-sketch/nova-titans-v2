@@ -8,6 +8,14 @@ const navLinks = [
   { href: '/stats', label: 'Stats' },
 ]
 
+const bottomTabs = [
+  { href: '/', label: 'Home', icon: '🏠' },
+  { href: '/roster', label: 'Roster', icon: '👥' },
+  { href: '/schedule', label: 'Schedule', icon: '📅' },
+  { href: '/gallery', label: 'Gallery', icon: '📷' },
+  { href: '/stats', label: 'Stats', icon: '📊' },
+]
+
 const affiliations = [
   { label: 'FHSAA', full: 'Florida High School Athletic Association', href: 'https://fhsaa.com/' },
   { label: 'HSBN', full: 'High School Baseball Network', href: 'https://www.browardhighschoolbaseball.com/' },
@@ -32,13 +40,14 @@ export default function Layout({ children }) {
               <div className="w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold" style={{ backgroundColor: '#006633', color: '#FFD700' }}>
                 NT
               </div>
-              <div>
+              {/* Show full logo text on desktop; mobile only shows NT badge */}
+              <div className="hidden sm:block">
                 <div className="font-display font-bold text-white text-lg leading-tight tracking-wide">NOVA TITANS</div>
                 <div className="text-xs leading-tight" style={{ color: '#FFD700' }}>BASEBALL</div>
               </div>
             </Link>
 
-            {/* Desktop Nav */}
+            {/* Desktop Nav only */}
             <nav className="hidden md:flex items-center gap-1">
               {navLinks.map(link => (
                 <Link
@@ -54,31 +63,61 @@ export default function Layout({ children }) {
                 </Link>
               ))}
             </nav>
-
-            {/* Mobile Nav */}
-            <nav className="flex md:hidden items-center gap-1">
-              {navLinks.map(link => (
-                <Link
-                  key={link.href}
-                  to={link.href}
-                  className={`px-2 py-1 rounded text-xs font-semibold tracking-wide transition-colors font-display uppercase ${
-                    location.pathname === link.href
-                      ? 'text-yellow-400'
-                      : 'text-gray-400 hover:text-white'
-                  }`}
-                >
-                  {link.label}
-                </Link>
-              ))}
-            </nav>
           </div>
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="flex-1">
+      {/* Main Content — pb-20 on mobile to clear the bottom tab bar */}
+      <main className="flex-1 pb-20 md:pb-0">
         {children}
       </main>
+
+      {/* ─── BOTTOM TAB BAR (mobile only) ─── */}
+      <nav
+        className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-green-900/50"
+        style={{
+          backgroundColor: 'rgba(10,15,10,0.97)',
+          backdropFilter: 'blur(12px)',
+          height: '56px',
+          paddingBottom: 'env(safe-area-inset-bottom)',
+        }}
+      >
+        <div className="flex items-stretch h-full">
+          {bottomTabs.map(tab => {
+            const isActive = location.pathname === tab.href
+            return (
+              <Link
+                key={tab.href}
+                to={tab.href}
+                className="flex-1 flex flex-col items-center justify-center gap-0.5 transition-colors"
+                style={{ minHeight: '44px' }}
+              >
+                <span className="text-lg leading-none">{tab.icon}</span>
+                <span
+                  className="font-display font-bold uppercase text-center leading-none"
+                  style={{
+                    fontSize: '0.55rem',
+                    letterSpacing: '0.05em',
+                    color: isActive ? '#FFD700' : '#6b7280',
+                  }}
+                >
+                  {tab.label}
+                </span>
+                {isActive && (
+                  <span
+                    className="absolute bottom-0 rounded-t-sm"
+                    style={{
+                      width: '24px',
+                      height: '3px',
+                      backgroundColor: '#FFD700',
+                    }}
+                  />
+                )}
+              </Link>
+            )
+          })}
+        </div>
+      </nav>
 
       {/* ─── FOOTER ─── */}
       <footer className="border-t border-green-900/30 mt-16" style={{ backgroundColor: '#060c06' }}>

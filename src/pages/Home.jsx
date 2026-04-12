@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import Hero from '../components/Hero'
 import Lightbox from '../components/Lightbox'
-import { getBattingLeaders, getPitchingLeaders, computeRecord } from '../lib/queries'
+import { getBattingLeaders, getPitchingLeaders, computeRecord, fetchPhotos } from '../lib/queries'
 import highlightsData from '../../content/highlights.json'
 
 // ─── Animated Counter ────────────────────────────────────────────────────────
@@ -53,8 +53,11 @@ function AnimatedCounter({ target, decimals = 0, prefix = '', suffix = '' }) {
 // ─── Schedule Strip ───────────────────────────────────────────────────────────
 function ScheduleStrip({ games }) {
   return (
-    <div className="overflow-x-auto pb-3">
-      <div className="flex gap-3 min-w-max">
+    <div
+      className="overflow-x-auto pb-3"
+      style={{ WebkitOverflowScrolling: 'touch' }}
+    >
+      <div className="flex gap-2 sm:gap-3 min-w-max px-1">
         {games.map((game) => {
           const isWin = game.result?.includes('(W)')
           const isLoss = game.result?.includes('(L)')
@@ -69,25 +72,36 @@ function ScheduleStrip({ games }) {
             ? new Date(game.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
             : ''
 
+          // Abbreviate opponent to 3 chars on mobile (handled in layout via text truncation)
+          const opponentAbbr = game.opponent ? game.opponent.slice(0, 3).toUpperCase() : '???'
+
           return (
             <Link
               key={game.id}
               to="/gallery"
               className="flex flex-col items-center gap-1.5 group"
               title={`vs ${game.opponent}${game.result ? ' · ' + game.result : ''}`}
+              style={{ minWidth: '52px' }}
             >
               <div
                 className="w-3 h-3 rounded-full transition-transform group-hover:scale-150"
                 style={{ backgroundColor: dotColor, boxShadow: `0 0 6px ${dotColor}` }}
               />
               <div
-                className="rounded-lg px-2 py-1 text-center transition-all"
-                style={{ backgroundColor: dotBg, border: `1px solid ${dotColor}30` }}
+                className="rounded-lg px-2 py-1.5 text-center transition-all"
+                style={{
+                  backgroundColor: dotBg,
+                  border: `1px solid ${dotColor}30`,
+                  minHeight: '48px',
+                  minWidth: '48px',
+                }}
               >
                 <div className="font-display font-bold text-xs" style={{ color: dotColor }}>
                   {isRainout ? '☔' : isWin ? 'W' : isLoss ? 'L' : '—'}
                 </div>
-                <div className="text-gray-400 text-xs whitespace-nowrap">{game.opponent?.slice(0, 8)}</div>
+                {/* Mobile: 3-char abbreviation; sm+: up to 8 chars */}
+                <div className="text-gray-400 text-xs whitespace-nowrap sm:hidden">{opponentAbbr}</div>
+                <div className="text-gray-400 text-xs whitespace-nowrap hidden sm:block">{game.opponent?.slice(0, 8)}</div>
                 <div className="text-gray-600 text-xs">{formatted}</div>
               </div>
             </Link>
@@ -125,7 +139,8 @@ function CarouselPlayerCard({ player, battingStats, pitchingStats, season, navig
   return (
     <button
       onClick={() => navigate(`/player/${player.id}`)}
-      className="shrink-0 w-40 group focus:outline-none"
+      // Slightly wider on mobile for better tap targets; w-40 on sm+
+      className="shrink-0 w-44 sm:w-40 group focus:outline-none"
     >
       <div
         className="rounded-xl p-4 flex flex-col items-center gap-2 transition-all duration-200 border group-hover:border-yellow-400/60 group-hover:-translate-y-1"
@@ -197,7 +212,12 @@ function CarouselPlayerCard({ player, battingStats, pitchingStats, season, navig
 
 // ─── Main Home Component ──────────────────────────────────────────────────────
 export default function Home({ data }) {
-  const { seasons, games, players, battingStats, pitchingStats, photos, articles = [] } = data
+  const { seasons, games, players, battingStats, pitchingStats, articles = [] } = data
+  const [photos, setPhotos] = useState([])
+  
+  useEffect(() => {
+    fetchPhotos().then(setPhotos)
+  }, [])
   const navigate = useNavigate()
 
   const currentSeason = seasons.find((s) => s.is_current) || seasons[0]
@@ -266,14 +286,14 @@ export default function Home({ data }) {
       {/* ── SECTION 2: Latest Game Spotlight ────────────────────── */}
       {latestGame && (
         <section
-          className="py-16 border-t"
+          className="py-8 sm:py-16 border-t"
           style={{ borderColor: 'rgba(0,102,51,0.3)' }}
         >
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             {/* Section header */}
-            <div className="flex items-center gap-3 mb-8">
-              <div className="w-1 h-8 rounded" style={{ backgroundColor: '#FFD700' }} />
-              <h2 className="font-display font-black uppercase tracking-widest text-xl" style={{ color: '#FFD700' }}>
+            <div className="flex items-center gap-3 mb-5 sm:mb-8">
+              <div className="w-1 h-7 sm:h-8 rounded" style={{ backgroundColor: '#FFD700' }} />
+              <h2 className="font-display font-black uppercase tracking-widest text-lg sm:text-xl" style={{ color: '#FFD700' }}>
                 Latest Game
               </h2>
             </div>
@@ -283,14 +303,15 @@ export default function Home({ data }) {
               const score = parseScore(latestGame.result)
               const isWin = latestGame.result?.includes('(W)')
               return (
-                <div className="mb-8">
+                <div className="mb-6 sm:mb-8">
+                  {/* Score row — wraps tightly on mobile */}
                   <div
-                    className="inline-flex items-center gap-4 px-6 py-4 rounded-2xl mb-3"
+                    className="inline-flex items-center gap-2 sm:gap-4 px-3 sm:px-6 py-3 sm:py-4 rounded-2xl mb-3 max-w-full overflow-hidden"
                     style={{ backgroundColor: '#111811', border: '1px solid #1e2e1e' }}
                   >
                     <span
-                      className="font-display font-black uppercase tracking-widest"
-                      style={{ fontSize: 'clamp(1.2rem, 4vw, 2.5rem)', color: '#FFD700' }}
+                      className="font-display font-black uppercase tracking-widest whitespace-nowrap"
+                      style={{ fontSize: 'clamp(0.8rem, 3vw, 2.5rem)', color: '#FFD700' }}
                     >
                       TITANS
                     </span>
@@ -298,28 +319,28 @@ export default function Home({ data }) {
                       <>
                         <span
                           className="font-display font-black"
-                          style={{ fontSize: 'clamp(2rem, 6vw, 4rem)', color: isWin ? '#4ade80' : '#f87171' }}
+                          style={{ fontSize: 'clamp(1.5rem, 5vw, 4rem)', color: isWin ? '#4ade80' : '#f87171' }}
                         >
                           {score.titans}
                         </span>
-                        <span className="font-display font-black text-gray-600" style={{ fontSize: 'clamp(1.5rem, 4vw, 3rem)' }}>
+                        <span className="font-display font-black text-gray-600" style={{ fontSize: 'clamp(1rem, 3vw, 3rem)' }}>
                           —
                         </span>
                         <span
                           className="font-display font-black text-gray-300"
-                          style={{ fontSize: 'clamp(2rem, 6vw, 4rem)' }}
+                          style={{ fontSize: 'clamp(1.5rem, 5vw, 4rem)' }}
                         >
                           {score.opp}
                         </span>
                       </>
                     ) : (
-                      <span className="font-display font-bold text-gray-400 text-xl">
+                      <span className="font-display font-bold text-gray-400 text-base sm:text-xl">
                         {latestGame.result}
                       </span>
                     )}
                     <span
-                      className="font-display font-black uppercase tracking-widest"
-                      style={{ fontSize: 'clamp(1.2rem, 4vw, 2.5rem)', color: 'rgba(255,255,255,0.5)' }}
+                      className="font-display font-black uppercase tracking-widest whitespace-nowrap truncate max-w-[80px] sm:max-w-none"
+                      style={{ fontSize: 'clamp(0.8rem, 3vw, 2.5rem)', color: 'rgba(255,255,255,0.5)' }}
                     >
                       {latestGame.opponent}
                     </span>
@@ -335,7 +356,7 @@ export default function Home({ data }) {
                       {isWin ? 'WIN' : 'LOSS'}
                     </span>
                     {latestGame.date && (
-                      <span>
+                      <span className="text-xs sm:text-sm">
                         {new Date(latestGame.date + 'T12:00:00').toLocaleDateString('en-US', {
                           weekday: 'long',
                           month: 'long',
@@ -348,20 +369,21 @@ export default function Home({ data }) {
               )
             })()}
 
-            {/* Photo strip */}
+            {/* Photo strip — 2 cols on mobile, 4 on sm+ */}
             {latestGamePhotos.length > 0 && (
               <div
                 className="grid gap-2 rounded-2xl overflow-hidden cursor-pointer"
                 style={{
-                  gridTemplateColumns: `repeat(${Math.min(latestGamePhotos.length, 4)}, 1fr)`,
+                  gridTemplateColumns: `repeat(2, 1fr)`,
                   maxHeight: '320px',
                 }}
                 onClick={() => setLightbox({ game: latestGame, photos: latestGamePhotos, index: 0 })}
               >
-                {latestGamePhotos.slice(0, 4).map((photo, idx) => (
+                {/* Mobile: show 2 photos; sm+: show 4 */}
+                {latestGamePhotos.slice(0, 2).map((photo, idx) => (
                   <div
                     key={photo.id || idx}
-                    className="relative overflow-hidden group"
+                    className="relative overflow-hidden group sm:hidden"
                     style={{ paddingBottom: '66%' }}
                   >
                     <img
@@ -374,15 +396,53 @@ export default function Home({ data }) {
                         e.target.parentElement.style.backgroundColor = '#1a2a1a'
                       }}
                     />
-                    {idx === 3 && latestGamePhotos.length > 4 && (
+                    {idx === 1 && latestGamePhotos.length > 2 && (
                       <div className="absolute inset-0 flex items-center justify-center bg-black/60">
                         <span className="font-display font-black text-white text-2xl">
-                          +{latestGamePhotos.length - 4}
+                          +{latestGamePhotos.length - 2}
                         </span>
                       </div>
                     )}
                   </div>
                 ))}
+                {/* Desktop: show 4 photos in a 4-col grid override */}
+                <div
+                  className="hidden sm:contents"
+                  style={{ gridColumn: '1 / -1' }}
+                >
+                  <div
+                    className="hidden sm:grid gap-2 col-span-2 rounded-2xl overflow-hidden"
+                    style={{
+                      gridTemplateColumns: `repeat(${Math.min(latestGamePhotos.length, 4)}, 1fr)`,
+                    }}
+                  >
+                    {latestGamePhotos.slice(0, 4).map((photo, idx) => (
+                      <div
+                        key={photo.id || idx}
+                        className="relative overflow-hidden group"
+                        style={{ paddingBottom: '66%' }}
+                      >
+                        <img
+                          src={photo.url}
+                          alt={`Game photo ${idx + 1}`}
+                          className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                          loading="lazy"
+                          onError={(e) => {
+                            e.target.style.display = 'none'
+                            e.target.parentElement.style.backgroundColor = '#1a2a1a'
+                          }}
+                        />
+                        {idx === 3 && latestGamePhotos.length > 4 && (
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/60">
+                            <span className="font-display font-black text-white text-2xl">
+                              +{latestGamePhotos.length - 4}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             )}
           </div>
@@ -392,14 +452,14 @@ export default function Home({ data }) {
       {/* ── SECTION 3: Player Spotlight Carousel ────────────────── */}
       {players.length > 0 && (
         <section
-          className="py-16 border-t"
+          className="py-8 sm:py-16 border-t"
           style={{ borderColor: 'rgba(0,102,51,0.3)' }}
         >
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center justify-between mb-5 sm:mb-8">
               <div className="flex items-center gap-3">
-                <div className="w-1 h-8 rounded" style={{ backgroundColor: '#FFD700' }} />
-                <h2 className="font-display font-black uppercase tracking-widest text-xl" style={{ color: '#FFD700' }}>
+                <div className="w-1 h-7 sm:h-8 rounded" style={{ backgroundColor: '#FFD700' }} />
+                <h2 className="font-display font-black uppercase tracking-widest text-lg sm:text-xl" style={{ color: '#FFD700' }}>
                   Player Spotlight
                 </h2>
               </div>
@@ -414,18 +474,24 @@ export default function Home({ data }) {
 
             <div
               ref={carouselRef}
-              className="flex gap-4 overflow-x-auto pb-4"
-              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+              className="flex gap-3 sm:gap-4 overflow-x-auto pb-4"
+              style={{
+                scrollbarWidth: 'none',
+                msOverflowStyle: 'none',
+                WebkitOverflowScrolling: 'touch',
+                scrollSnapType: 'x mandatory',
+              }}
             >
               {players.map((player) => (
-                <CarouselPlayerCard
-                  key={player.id}
-                  player={player}
-                  battingStats={battingStats}
-                  pitchingStats={pitchingStats}
-                  season={currentSeason}
-                  navigate={navigate}
-                />
+                <div key={player.id} style={{ scrollSnapAlign: 'start' }}>
+                  <CarouselPlayerCard
+                    player={player}
+                    battingStats={battingStats}
+                    pitchingStats={pitchingStats}
+                    season={currentSeason}
+                    navigate={navigate}
+                  />
+                </div>
               ))}
             </div>
           </div>
@@ -435,19 +501,19 @@ export default function Home({ data }) {
       {/* ── SECTION 4: Season Stats Dashboard ───────────────────── */}
       {(battingStats.length > 0 || pitchingStats.length > 0) && (
         <section
-          className="py-16 border-t"
+          className="py-8 sm:py-16 border-t"
           style={{ borderColor: 'rgba(0,102,51,0.3)', background: 'linear-gradient(180deg, #0a0f0a 0%, #060c06 100%)' }}
         >
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center gap-3 mb-10">
-              <div className="w-1 h-8 rounded" style={{ backgroundColor: '#FFD700' }} />
-              <h2 className="font-display font-black uppercase tracking-widest text-xl" style={{ color: '#FFD700' }}>
+            <div className="flex items-center gap-3 mb-6 sm:mb-10">
+              <div className="w-1 h-7 sm:h-8 rounded" style={{ backgroundColor: '#FFD700' }} />
+              <h2 className="font-display font-black uppercase tracking-widest text-lg sm:text-xl" style={{ color: '#FFD700' }}>
                 Season Stats
               </h2>
             </div>
 
-            {/* Animated counters */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
+            {/* Animated counters — 2x2 on mobile, 4 across on md+ */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8 sm:mb-12">
               {[
                 {
                   label: 'Team AVG',
@@ -468,35 +534,36 @@ export default function Home({ data }) {
               ].map((stat) => (
                 <div
                   key={stat.label}
-                  className="rounded-2xl p-6 text-center border"
+                  className="rounded-2xl p-4 sm:p-6 text-center border"
                   style={{ backgroundColor: '#111811', borderColor: '#1e2e1e' }}
                 >
                   <div
                     className="font-display font-black leading-none mb-2"
-                    style={{ fontSize: 'clamp(2.5rem, 6vw, 4rem)', color: '#FFD700' }}
+                    style={{ fontSize: 'clamp(1.8rem, 5vw, 4rem)', color: '#FFD700' }}
                   >
                     {stat.value}
                   </div>
-                  <div className="font-display uppercase tracking-widest text-xs text-gray-500">
+                  <div className="font-display uppercase tracking-widest text-gray-500" style={{ fontSize: '0.6rem' }}>
                     {stat.label}
                   </div>
                 </div>
               ))}
             </div>
 
-            {/* Leaderboards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Leaderboards — stack vertically on mobile */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
               {/* Batting Average Leaders */}
-              <div className="rounded-2xl p-6 border" style={{ backgroundColor: '#111811', borderColor: '#1e2e1e' }}>
-                <h3 className="font-display font-bold uppercase tracking-widest text-sm mb-5 flex items-center gap-2" style={{ color: '#FFD700' }}>
+              <div className="rounded-2xl p-4 sm:p-6 border" style={{ backgroundColor: '#111811', borderColor: '#1e2e1e' }}>
+                <h3 className="font-display font-bold uppercase tracking-widest text-sm mb-4 sm:mb-5 flex items-center gap-2" style={{ color: '#FFD700' }}>
                   ⚾ Batting Average
                 </h3>
-                <div className="space-y-4">
+                <div className="space-y-3 sm:space-y-4">
                   {avgLeaders.map((s, i) => (
                     <button
                       key={s.id}
                       onClick={() => s.player && navigate(`/player/${s.player.id}`)}
                       className="flex items-center gap-3 w-full group hover:opacity-80 transition-opacity"
+                      style={{ minHeight: '44px' }}
                     >
                       <span
                         className="w-7 h-7 rounded-full text-xs font-bold flex items-center justify-center shrink-0"
@@ -541,16 +608,17 @@ export default function Home({ data }) {
               </div>
 
               {/* HR Leaders */}
-              <div className="rounded-2xl p-6 border" style={{ backgroundColor: '#111811', borderColor: '#1e2e1e' }}>
-                <h3 className="font-display font-bold uppercase tracking-widest text-sm mb-5 flex items-center gap-2" style={{ color: '#FFD700' }}>
+              <div className="rounded-2xl p-4 sm:p-6 border" style={{ backgroundColor: '#111811', borderColor: '#1e2e1e' }}>
+                <h3 className="font-display font-bold uppercase tracking-widest text-sm mb-4 sm:mb-5 flex items-center gap-2" style={{ color: '#FFD700' }}>
                   💪 Home Runs
                 </h3>
-                <div className="space-y-4">
+                <div className="space-y-3 sm:space-y-4">
                   {hrLeaders.map((s, i) => (
                     <button
                       key={s.id}
                       onClick={() => s.player && navigate(`/player/${s.player.id}`)}
                       className="flex items-center gap-3 w-full hover:opacity-80 transition-opacity"
+                      style={{ minHeight: '44px' }}
                     >
                       <span
                         className="w-7 h-7 rounded-full text-xs font-bold flex items-center justify-center shrink-0"
@@ -595,16 +663,17 @@ export default function Home({ data }) {
               </div>
 
               {/* K Leaders */}
-              <div className="rounded-2xl p-6 border" style={{ backgroundColor: '#111811', borderColor: '#1e2e1e' }}>
-                <h3 className="font-display font-bold uppercase tracking-widest text-sm mb-5 flex items-center gap-2" style={{ color: '#FFD700' }}>
+              <div className="rounded-2xl p-4 sm:p-6 border" style={{ backgroundColor: '#111811', borderColor: '#1e2e1e' }}>
+                <h3 className="font-display font-bold uppercase tracking-widest text-sm mb-4 sm:mb-5 flex items-center gap-2" style={{ color: '#FFD700' }}>
                   🔥 Strikeouts (Pitching)
                 </h3>
-                <div className="space-y-4">
+                <div className="space-y-3 sm:space-y-4">
                   {kLeaders.map((s, i) => (
                     <button
                       key={s.id}
                       onClick={() => s.player && navigate(`/player/${s.player.id}`)}
                       className="flex items-center gap-3 w-full hover:opacity-80 transition-opacity"
+                      style={{ minHeight: '44px' }}
                     >
                       <span
                         className="w-7 h-7 rounded-full text-xs font-bold flex items-center justify-center shrink-0"
@@ -655,14 +724,14 @@ export default function Home({ data }) {
       {/* ── SECTION 5: Photo Gallery Preview ────────────────────── */}
       {galleryPreviewPhotos.length > 0 && (
         <section
-          className="py-16 border-t"
+          className="py-8 sm:py-16 border-t"
           style={{ borderColor: 'rgba(0,102,51,0.3)' }}
         >
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center justify-between mb-5 sm:mb-8">
               <div className="flex items-center gap-3">
-                <div className="w-1 h-8 rounded" style={{ backgroundColor: '#FFD700' }} />
-                <h2 className="font-display font-black uppercase tracking-widest text-xl" style={{ color: '#FFD700' }}>
+                <div className="w-1 h-7 sm:h-8 rounded" style={{ backgroundColor: '#FFD700' }} />
+                <h2 className="font-display font-black uppercase tracking-widest text-lg sm:text-xl" style={{ color: '#FFD700' }}>
                   Photo Gallery
                 </h2>
               </div>
@@ -671,12 +740,12 @@ export default function Home({ data }) {
                 className="font-display font-bold text-sm uppercase tracking-widest transition-colors"
                 style={{ color: '#4ade80' }}
               >
-                View All Photos →
+                View All →
               </Link>
             </div>
 
-            {/* Masonry-style grid */}
-            <div className="columns-2 sm:columns-3 lg:columns-4 gap-3 space-y-3">
+            {/* 2 columns on mobile, 3 on sm, 4 on lg */}
+            <div className="columns-2 sm:columns-3 lg:columns-4 gap-2 sm:gap-3 space-y-2 sm:space-y-3">
               {galleryPreviewPhotos.map(({ game, photo }, idx) => (
                 <div
                   key={photo.id || idx}
@@ -697,7 +766,7 @@ export default function Home({ data }) {
                   />
                   {/* Hover overlay */}
                   <div
-                    className="absolute inset-0 flex items-end p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                    className="absolute inset-0 flex items-end p-2 sm:p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
                     style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.75) 0%, transparent 60%)' }}
                   >
                     <div>
@@ -743,18 +812,19 @@ export default function Home({ data }) {
 
         return (
           <section
-            className="py-16 border-t"
+            className="py-8 sm:py-16 border-t"
             style={{ borderColor: 'rgba(0,102,51,0.3)' }}
           >
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="flex items-center gap-3 mb-8">
-                <div className="w-1 h-8 rounded" style={{ backgroundColor: '#FFD700' }} />
-                <h2 className="font-display font-black uppercase tracking-widest text-xl" style={{ color: '#FFD700' }}>
+              <div className="flex items-center gap-3 mb-5 sm:mb-8">
+                <div className="w-1 h-7 sm:h-8 rounded" style={{ backgroundColor: '#FFD700' }} />
+                <h2 className="font-display font-black uppercase tracking-widest text-lg sm:text-xl" style={{ color: '#FFD700' }}>
                   News &amp; Highlights
                 </h2>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+              {/* Single column on mobile, multi-column on sm+ */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
                 {displayArticles.map((article) => {
                   const formattedDate = article.date
                     ? new Date(article.date + 'T12:00:00').toLocaleDateString('en-US', {
@@ -802,7 +872,7 @@ export default function Home({ data }) {
                       )}
 
                       {/* Card body */}
-                      <div className="flex flex-col flex-1 p-5">
+                      <div className="flex flex-col flex-1 p-4 sm:p-5">
                         {/* Source + date */}
                         <div className="flex items-center gap-2 mb-3">
                           {article.source && (
@@ -852,21 +922,25 @@ export default function Home({ data }) {
 
       {/* ── SECTION 6b: HSBN Media Day Video ────────────────────── */}
       <section
-        className="py-16 border-t"
+        className="py-8 sm:py-16 border-t"
         style={{ borderColor: 'rgba(0,102,51,0.3)' }}
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-1 h-8 rounded" style={{ backgroundColor: '#FFD700' }} />
-            <h2 className="font-display font-black uppercase tracking-widest text-xl" style={{ color: '#FFD700' }}>
-              🎥 HSBN Media Day 2026
-            </h2>
+        {/* Full-width embed on mobile — no extra horizontal padding on mobile */}
+        <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
+          <div className="px-4 sm:px-0">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-1 h-7 sm:h-8 rounded" style={{ backgroundColor: '#FFD700' }} />
+              <h2 className="font-display font-black uppercase tracking-widest text-lg sm:text-xl" style={{ color: '#FFD700' }}>
+                🎥 HSBN Media Day 2026
+              </h2>
+            </div>
+            <p className="text-gray-400 text-sm mb-5 sm:mb-8 ml-4">
+              Coach Luebkert and team leaders discuss the upcoming season at the annual HSBN Press Conference
+            </p>
           </div>
-          <p className="text-gray-400 text-sm mb-8 ml-4">
-            Coach Luebkert and team leaders discuss the upcoming season at the annual HSBN Press Conference
-          </p>
 
-          <div className="max-w-3xl">
+          {/* Full width on mobile (no px-4), max-w-3xl on larger screens */}
+          <div className="sm:max-w-3xl sm:px-0 px-0">
             <div style={{ position: 'relative', paddingBottom: '56.25%', height: 0 }}>
               <iframe
                 src="https://www.youtube.com/embed/sjLH1aXugBw"
@@ -880,8 +954,9 @@ export default function Home({ data }) {
                   width: '100%',
                   height: '100%',
                   border: 'none',
-                  borderRadius: '12px',
+                  borderRadius: '0',
                 }}
+                className="sm:rounded-xl"
               />
             </div>
           </div>
@@ -898,7 +973,7 @@ export default function Home({ data }) {
 
         return (
           <section
-            className="py-16 border-t"
+            className="py-8 sm:py-16 border-t"
             style={{
               borderColor: 'rgba(0,102,51,0.3)',
               background: 'linear-gradient(180deg, #0a0f0a 0%, #060c06 100%)',
@@ -906,18 +981,19 @@ export default function Home({ data }) {
           >
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
               {/* Section header */}
-              <div className="flex items-center gap-3 mb-10">
-                <div className="w-1 h-8 rounded" style={{ backgroundColor: '#FFD700' }} />
-                <h2 className="font-display font-black uppercase tracking-widest text-xl" style={{ color: '#FFD700' }}>
+              <div className="flex items-center gap-3 mb-6 sm:mb-10">
+                <div className="w-1 h-7 sm:h-8 rounded" style={{ backgroundColor: '#FFD700' }} />
+                <h2 className="font-display font-black uppercase tracking-widest text-lg sm:text-xl" style={{ color: '#FFD700' }}>
                   Titans Legacy
                 </h2>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+              {/* Stack vertically on mobile, side-by-side on lg+ */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-10">
                 {/* Left: History */}
                 <div>
                   <h3
-                    className="font-display font-black uppercase text-3xl sm:text-4xl leading-tight mb-5"
+                    className="font-display font-black uppercase text-2xl sm:text-3xl sm:text-4xl leading-tight mb-4 sm:mb-5"
                     style={{ color: '#ffffff' }}
                   >
                     Nearly 50 Years of{' '}
@@ -926,13 +1002,13 @@ export default function Home({ data }) {
 
                   {/* Coach McQuaid quote */}
                   <blockquote
-                    className="rounded-2xl p-6 mb-6 border-l-4"
+                    className="rounded-2xl p-4 sm:p-6 mb-4 sm:mb-6 border-l-4"
                     style={{ backgroundColor: '#111811', borderLeftColor: '#FFD700' }}
                   >
-                    <p className="text-gray-200 text-base leading-relaxed italic mb-3">
+                    <p className="text-gray-200 text-sm sm:text-base leading-relaxed italic mb-3">
                       &ldquo;{mcQuaidQuote}&rdquo;
                     </p>
-                    <footer className="text-sm font-bold uppercase tracking-widest" style={{ color: '#FFD700' }}>
+                    <footer className="text-xs sm:text-sm font-bold uppercase tracking-widest" style={{ color: '#FFD700' }}>
                       — Coach Pat McQuaid
                       <span className="text-gray-500 font-normal normal-case tracking-normal ml-2">
                         FHSAA Hall of Fame · Nova HS '68 · Head Coach 1974–2024
@@ -941,26 +1017,26 @@ export default function Home({ data }) {
                   </blockquote>
 
                   {/* Season preview */}
-                  <p className="text-gray-400 leading-relaxed mb-6">
+                  <p className="text-gray-400 text-sm leading-relaxed mb-4 sm:mb-6">
                     {seasonPreview}
                   </p>
 
                   {/* Current coach + facility */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-2 gap-3 sm:gap-4">
                     <div
-                      className="rounded-xl p-4 border"
+                      className="rounded-xl p-3 sm:p-4 border"
                       style={{ backgroundColor: '#111811', borderColor: '#1e2e1e' }}
                     >
                       <div className="text-xs uppercase tracking-widest text-gray-500 mb-1">Head Coach</div>
-                      <div className="font-display font-bold text-white text-base">Brian Luebkert</div>
+                      <div className="font-display font-bold text-white text-sm sm:text-base">Brian Luebkert</div>
                       <div className="text-xs text-gray-500 mt-0.5">2026 Season</div>
                     </div>
                     <div
-                      className="rounded-xl p-4 border"
+                      className="rounded-xl p-3 sm:p-4 border"
                       style={{ backgroundColor: '#111811', borderColor: '#1e2e1e' }}
                     >
                       <div className="text-xs uppercase tracking-widest text-gray-500 mb-1">Facility</div>
-                      <div className="font-display font-bold text-white text-sm leading-snug">
+                      <div className="font-display font-bold text-white text-xs sm:text-sm leading-snug">
                         1,000-Seat Stadium
                       </div>
                       <div className="text-xs text-gray-500 mt-0.5">Indoor cages · Digital scoreboard</div>
@@ -970,15 +1046,17 @@ export default function Home({ data }) {
 
                 {/* Right: Championships + Alumni */}
                 <div>
-                  {/* Championship badges */}
-                  <div className="mb-8">
-                    <div className="text-xs uppercase tracking-widest text-gray-500 mb-4">Championship Titles</div>
-                    <div className="flex flex-wrap gap-2">
+                  {/* Championship badges — smaller font, tighter wrap on mobile */}
+                  <div className="mb-6 sm:mb-8">
+                    <div className="text-xs uppercase tracking-widest text-gray-500 mb-3 sm:mb-4">Championship Titles</div>
+                    <div className="flex flex-wrap gap-1.5 sm:gap-2">
                       {featuredChamps.map((c) => (
                         <span
                           key={c.year}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold font-display uppercase tracking-wider border"
+                          className="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full font-bold font-display uppercase border"
                           style={{
+                            fontSize: 'clamp(0.6rem, 1.5vw, 0.75rem)',
+                            letterSpacing: '0.04em',
                             backgroundColor: 'rgba(255,215,0,0.1)',
                             borderColor: 'rgba(255,215,0,0.4)',
                             color: '#FFD700',
@@ -988,25 +1066,25 @@ export default function Home({ data }) {
                         </span>
                       ))}
                     </div>
-                    <div className="mt-3 text-xs text-gray-600">
+                    <div className="mt-2 sm:mt-3 text-xs text-gray-600">
                       + {championships.length - featuredChamps.length} more district & regional titles since 1985
                     </div>
                   </div>
 
                   {/* MLB Alumni */}
                   <div>
-                    <div className="text-xs uppercase tracking-widest text-gray-500 mb-4">MLB Alumni</div>
-                    <div className="flex flex-col gap-3">
+                    <div className="text-xs uppercase tracking-widest text-gray-500 mb-3 sm:mb-4">MLB Alumni</div>
+                    <div className="flex flex-col gap-2 sm:gap-3">
                       {[
                         { name: 'Michael Morse', detail: 'World Series Champion · MLB Outfielder/1B', emoji: '🌟' },
                         { name: 'Anthony Swarzak', detail: 'MLB Pitcher · 10 Seasons', emoji: '⚾' },
                       ].map((alum) => (
                         <div
                           key={alum.name}
-                          className="flex items-center gap-3 rounded-xl p-4 border"
+                          className="flex items-center gap-3 rounded-xl p-3 sm:p-4 border"
                           style={{ backgroundColor: '#111811', borderColor: '#1e2e1e' }}
                         >
-                          <span className="text-2xl">{alum.emoji}</span>
+                          <span className="text-xl sm:text-2xl">{alum.emoji}</span>
                           <div>
                             <div className="font-display font-bold text-white text-sm">{alum.name}</div>
                             <div className="text-xs text-gray-500">{alum.detail}</div>
@@ -1016,11 +1094,11 @@ export default function Home({ data }) {
                     </div>
 
                     {/* Location + district */}
-                    <div className="mt-4 rounded-xl p-4 border text-xs text-gray-500" style={{ borderColor: '#1e2e1e' }}>
+                    <div className="mt-3 sm:mt-4 rounded-xl p-3 sm:p-4 border text-xs text-gray-500" style={{ borderColor: '#1e2e1e' }}>
                       <span className="text-gray-400">📍 {programHistory.location}</span>
-                      <span className="mx-3 text-gray-700">·</span>
+                      <span className="mx-2 sm:mx-3 text-gray-700">·</span>
                       <span>{programHistory.district}</span>
-                      <span className="mx-3 text-gray-700">·</span>
+                      <span className="mx-2 sm:mx-3 text-gray-700">·</span>
                       <span>{programHistory.schoolSize}</span>
                     </div>
                   </div>
@@ -1052,22 +1130,23 @@ export default function Home({ data }) {
 
         return (
           <section
-            className="py-16 border-t"
+            className="py-8 sm:py-16 border-t"
             style={{ borderColor: 'rgba(0,102,51,0.3)' }}
           >
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
               {/* Section header */}
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-1 h-8 rounded" style={{ backgroundColor: '#FFD700' }} />
-                <h2 className="font-display font-black uppercase tracking-widest text-xl" style={{ color: '#FFD700' }}>
+              <div className="flex items-center gap-3 mb-2 sm:mb-3">
+                <div className="w-1 h-7 sm:h-8 rounded" style={{ backgroundColor: '#FFD700' }} />
+                <h2 className="font-display font-black uppercase tracking-widest text-lg sm:text-xl" style={{ color: '#FFD700' }}>
                   Senior Spotlight
                 </h2>
               </div>
-              <p className="font-display text-gray-400 text-sm uppercase tracking-widest mb-8 ml-4">
+              <p className="font-display text-gray-400 text-xs sm:text-sm uppercase tracking-widest mb-5 sm:mb-8 ml-4">
                 Class of 2026 — Honoring our Graduating Titans
               </p>
 
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-5">
+              {/* 2x2 on mobile, 4 across on sm+ */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-5">
                 {seniors.map(({ num, meta, player }) => {
                   const name = player?.name || meta?.display || `#${num}`
                   const position = player?.positions || ''
@@ -1084,11 +1163,12 @@ export default function Home({ data }) {
                     <Link
                       key={num}
                       to={profileUrl}
-                      className="flex flex-col items-center gap-3 group rounded-2xl p-5 border transition-all duration-200 hover:-translate-y-1"
+                      className="flex flex-col items-center gap-2 sm:gap-3 group rounded-2xl p-4 sm:p-5 border transition-all duration-200 hover:-translate-y-1"
                       style={{
                         backgroundColor: '#111811',
                         borderColor: 'rgba(255,215,0,0.35)',
                         textDecoration: 'none',
+                        minHeight: '44px',
                       }}
                     >
                       {/* Headshot with gold ring */}
@@ -1100,7 +1180,7 @@ export default function Home({ data }) {
                           <img
                             src={headshotUrl}
                             alt={name}
-                            className="w-20 h-20 rounded-full object-cover object-top border-2"
+                            className="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover object-top border-2"
                             style={{ borderColor: '#0a0f0a' }}
                             onError={(e) => {
                               e.target.style.display = 'none'
@@ -1109,8 +1189,11 @@ export default function Home({ data }) {
                           />
                         ) : null}
                         <div
-                          className="w-20 h-20 rounded-full items-center justify-center text-2xl font-bold border-2"
+                          className="rounded-full items-center justify-center font-bold border-2"
                           style={{
+                            width: 'clamp(64px, 16vw, 80px)',
+                            height: 'clamp(64px, 16vw, 80px)',
+                            fontSize: 'clamp(1.25rem, 4vw, 1.75rem)',
                             backgroundColor: '#006633',
                             borderColor: '#0a0f0a',
                             color: '#FFD700',
@@ -1122,7 +1205,7 @@ export default function Home({ data }) {
 
                         {/* Jersey number badge */}
                         <div
-                          className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full text-xs font-black flex items-center justify-center border-2"
+                          className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full text-xs font-black flex items-center justify-center border-2"
                           style={{ backgroundColor: '#FFD700', color: '#0a0f0a', borderColor: '#0a0f0a' }}
                         >
                           {num}
@@ -1132,7 +1215,7 @@ export default function Home({ data }) {
                       {/* Name */}
                       <div className="text-center">
                         <div
-                          className="font-display font-bold text-sm leading-tight group-hover:opacity-80 transition-opacity"
+                          className="font-display font-bold text-xs sm:text-sm leading-tight group-hover:opacity-80 transition-opacity"
                           style={{ color: '#FFD700' }}
                         >
                           {meta?.display || name}
@@ -1166,14 +1249,14 @@ export default function Home({ data }) {
       {/* ── SECTION 9: Schedule Strip ────────────────────────────── */}
       {games.length > 0 && (
         <section
-          className="py-16 border-t"
+          className="py-8 sm:py-16 border-t"
           style={{ borderColor: 'rgba(0,102,51,0.3)' }}
         >
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center justify-between mb-5 sm:mb-8">
               <div className="flex items-center gap-3">
-                <div className="w-1 h-8 rounded" style={{ backgroundColor: '#FFD700' }} />
-                <h2 className="font-display font-black uppercase tracking-widest text-xl" style={{ color: '#FFD700' }}>
+                <div className="w-1 h-7 sm:h-8 rounded" style={{ backgroundColor: '#FFD700' }} />
+                <h2 className="font-display font-black uppercase tracking-widest text-lg sm:text-xl" style={{ color: '#FFD700' }}>
                   2026 Season
                 </h2>
               </div>
@@ -1189,20 +1272,20 @@ export default function Home({ data }) {
             <ScheduleStrip games={games} />
 
             {/* Record summary */}
-            <div className="flex items-center gap-6 mt-6 text-sm text-gray-500">
-              <span className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-3 sm:gap-6 mt-4 sm:mt-6 text-sm text-gray-500">
+              <span className="flex items-center gap-2 text-xs sm:text-sm">
                 <span className="w-2.5 h-2.5 rounded-full bg-green-400" />
                 Win
               </span>
-              <span className="flex items-center gap-2">
+              <span className="flex items-center gap-2 text-xs sm:text-sm">
                 <span className="w-2.5 h-2.5 rounded-full bg-red-400" />
                 Loss
               </span>
-              <span className="flex items-center gap-2">
+              <span className="flex items-center gap-2 text-xs sm:text-sm">
                 <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: '#FFD700' }} />
                 Upcoming / Rained Out
               </span>
-              <span className="ml-auto font-display font-bold" style={{ color: '#FFD700' }}>
+              <span className="ml-auto font-display font-bold text-sm sm:text-base" style={{ color: '#FFD700' }}>
                 {record}
               </span>
             </div>

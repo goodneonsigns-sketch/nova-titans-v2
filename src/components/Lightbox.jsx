@@ -74,36 +74,39 @@ export default function Lightbox({ photos, initialIndex = 0, game, onClose }) {
       </div>
 
       {/* Image area */}
-      <div className="flex-1 flex items-center justify-center relative overflow-hidden">
-        {/* Prev button */}
+      <div className="flex-1 flex items-center justify-center overflow-hidden">
+        {/* Layout: [prev btn] [image] [next btn] — buttons never overlap image */}
         <button
           onClick={prev}
-          className="absolute left-2 md:left-6 z-10 w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center bg-black/50 hover:bg-black/80 text-white text-xl transition-all hover:scale-110 border border-white/10"
+          className="shrink-0 w-10 h-10 md:w-12 md:h-12 mx-1 md:mx-3 rounded-full flex items-center justify-center bg-black/50 hover:bg-black/80 text-white text-xl transition-all hover:scale-110 border border-white/10"
+          style={{ minWidth: '40px' }}
         >
           ‹
         </button>
 
-        {/* Image */}
-        <img
-          key={current.id || index}
-          src={current.url || ''}
-          alt={current.filename || `Photo ${index + 1}`}
-          className="max-h-full max-w-full object-contain select-none"
-          style={{ maxHeight: 'calc(100vh - 120px)' }}
-          draggable={false}
-          onError={e => {
-            e.target.style.display = 'none'
-            e.target.parentElement.insertAdjacentHTML(
-              'beforeend',
-              '<div class="text-gray-600 text-center"><div class="text-4xl mb-2">📷</div><div>Image unavailable</div></div>'
-            )
-          }}
-        />
+        {/* Image — takes remaining space */}
+        <div className="flex-1 flex items-center justify-center overflow-hidden" style={{ maxHeight: 'calc(100vh - 140px)' }}>
+          <img
+            key={current.id || index}
+            src={current.url || ''}
+            alt={current.filename || `Photo ${index + 1}`}
+            className="max-h-full max-w-full object-contain select-none"
+            style={{ maxHeight: 'calc(100vh - 140px)' }}
+            draggable={false}
+            onError={e => {
+              e.target.style.display = 'none'
+              e.target.parentElement.insertAdjacentHTML(
+                'beforeend',
+                '<div class="text-gray-600 text-center"><div class="text-4xl mb-2">📷</div><div>Image unavailable</div></div>'
+              )
+            }}
+          />
+        </div>
 
-        {/* Next button */}
         <button
           onClick={next}
-          className="absolute right-2 md:right-6 z-10 w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center bg-black/50 hover:bg-black/80 text-white text-xl transition-all hover:scale-110 border border-white/10"
+          className="shrink-0 w-10 h-10 md:w-12 md:h-12 mx-1 md:mx-3 rounded-full flex items-center justify-center bg-black/50 hover:bg-black/80 text-white text-xl transition-all hover:scale-110 border border-white/10"
+          style={{ minWidth: '40px' }}
         >
           ›
         </button>

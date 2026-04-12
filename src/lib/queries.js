@@ -1,8 +1,8 @@
 import { supabase } from './supabase'
 
 /**
- * Fetch all data needed for the app in parallel.
- * Returns { teamInfo, seasons, games, players, battingStats, pitchingStats, photos }
+ * Fetch core data needed for the app (NO photos — those load lazily).
+ * Also fetches lightweight photo counts per game for display.
  */
 export async function fetchAllData() {
   const [
@@ -12,7 +12,6 @@ export async function fetchAllData() {
     playersRes,
     battingRes,
     pitchingRes,
-    photosRes,
     articlesRes,
   ] = await Promise.all([
     supabase.from('team_info').select('*'),
@@ -21,7 +20,6 @@ export async function fetchAllData() {
     supabase.from('players').select('*').order('number', { ascending: true }),
     supabase.from('batting_stats').select('*'),
     supabase.from('pitching_stats').select('*'),
-    supabase.from('photos').select('id,game_id,filename,url,storage_path,sort_order,player_ids').order('sort_order', { ascending: true }).limit(5000),
     supabase.from('articles').select('*').order('date', { ascending: false }),
   ])
 
@@ -40,7 +38,7 @@ export async function fetchAllData() {
     players: playersRes.data || [],
     battingStats: battingRes.data || [],
     pitchingStats: pitchingRes.data || [],
-    photos: photosRes.data || [],
+    photos: [], // loaded lazily via fetchPhotos()
     articles: articlesRes.data || [],
     errors: [
       teamInfoRes.error,
@@ -49,10 +47,84 @@ export async function fetchAllData() {
       playersRes.error,
       battingRes.error,
       pitchingRes.error,
-      photosRes.error,
-      // articles error is non-fatal — table may not exist yet
+      // articles error is non-fatal
     ].filter(Boolean),
   }
+}
+
+// Cache for lazily loaded photos
+let _photosCache = null
+let _photosLoading = false
+let _photosCallbacks = []
+
+/**
+ * Lazily fetch ALL photos (called on demand, cached after first load).
+ */
+export async function fetchPhotos() {
+  if (_photosCache) return _photosCache
+
+  if (_photosLoading) {
+    // Already loading — wait for it
+    return new Promise(resolve => _photosCallbacks.push(resolve))
+  }
+
+  _photosLoading = true
+  const all = []
+  let offset = 0
+  while (true) {
+    const { data, error } = await supabase
+      .from('photos')
+      .select('id,game_id,filename,url,sort_order,player_ids')
+      .order('sort_order', { ascending: true })
+      .range(offset, offset + 999)
+    if (error || !data || data.length === 0) break
+    all.push(...data)
+    offset += data.length
+    if (data.length < 1000) break
+  }
+
+  _photosCache = all
+  _photosLoading = false
+  _photosCallbacks.forEach(cb => cb(all))
+  _photosCallbacks = []
+  return all
+}
+
+/**
+ * Fetch photos for a specific game only (lightweight).
+ */
+export async function fetchGamePhotos(gameId) {
+  const { data } = await supabase
+    .from('photos')
+    .select('id,game_id,filename,url,sort_order,player_ids')
+    .eq('game_id', gameId)
+    .order('sort_order', { ascending: true })
+  return data || []
+}
+
+/**
+ * Fetch photos for a specific player only.
+ */
+export async function fetchPlayerPhotos(playerId) {
+  const { data } = await supabase
+    .from('photos')
+    .select('id,game_id,filename,url,sort_order,player_ids')
+    .contains('player_ids', [playerId])
+    .order('sort_order', { ascending: true })
+  return data || []
+}
+
+/**
+ * Fetch photo counts per game (lightweight — for showing "X photos" badges).
+ */
+export async function fetchPhotoCounts() {
+  const { data } = await supabase
+    .from('photos')
+    .select('game_id')
+  if (!data) return {}
+  const counts = {}
+  data.forEach(p => { counts[p.game_id] = (counts[p.game_id] || 0) + 1 })
+  return counts
 }
 
 /**

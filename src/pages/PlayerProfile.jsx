@@ -1,11 +1,12 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import Lightbox from '../components/Lightbox'
+import { fetchPlayerPhotos } from '../lib/queries'
 
 function StatBox({ label, value, large = false, highlight = false }) {
   return (
     <div
-      className="rounded-xl p-4 text-center flex flex-col items-center justify-center"
+      className="rounded-xl p-3 sm:p-4 text-center flex flex-col items-center justify-center"
       style={{
         backgroundColor: highlight ? 'rgba(0,102,51,0.25)' : 'rgba(255,255,255,0.04)',
         border: `1px solid ${highlight ? 'rgba(0,102,51,0.5)' : 'rgba(255,255,255,0.06)'}`,
@@ -14,13 +15,13 @@ function StatBox({ label, value, large = false, highlight = false }) {
       <div
         className="font-display font-black leading-none mb-1"
         style={{
-          fontSize: large ? 'clamp(1.8rem, 4vw, 2.8rem)' : '1.25rem',
+          fontSize: large ? 'clamp(1.4rem, 4vw, 2.8rem)' : '1.1rem',
           color: highlight ? '#FFD700' : '#ffffff',
         }}
       >
         {value ?? 0}
       </div>
-      <div className="font-display uppercase tracking-widest text-gray-500" style={{ fontSize: '0.65rem' }}>
+      <div className="font-display uppercase tracking-widest text-gray-500" style={{ fontSize: '0.6rem' }}>
         {label}
       </div>
     </div>
@@ -100,7 +101,8 @@ function GameGalleryCard({ game, photos, onPhotoClick }) {
 export default function PlayerProfile({ data }) {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { players, battingStats, pitchingStats, seasons, games, photos } = data
+  const { players, battingStats, pitchingStats, seasons, games } = data
+  const [photos, setPhotos] = useState([])
 
   const currentSeason = seasons.find((s) => s.is_current) || seasons[0]
 
@@ -111,6 +113,13 @@ export default function PlayerProfile({ data }) {
   const nextPlayer = playerIndex < players.length - 1 ? players[playerIndex + 1] : null
 
   const [lightbox, setLightbox] = useState(null)
+
+  // Lazy-load this player's tagged photos
+  useEffect(() => {
+    if (player?.id) {
+      fetchPlayerPhotos(player.id).then(setPhotos)
+    }
+  }, [player?.id])
 
   if (!player) {
     return (
@@ -160,9 +169,8 @@ export default function PlayerProfile({ data }) {
     : null
 
   // Filter photos tagged with this player
-  const playerPhotos = photos.filter(
-    (p) => p.player_ids && p.player_ids.includes(player.id)
-  )
+  // Photos are already filtered for this player via fetchPlayerPhotos()
+  const playerPhotos = photos
 
   // Group player photos by game_id
   const playerPhotosByGame = playerPhotos.reduce((acc, photo) => {
@@ -185,7 +193,7 @@ export default function PlayerProfile({ data }) {
         className="relative overflow-hidden"
         style={{
           background: 'linear-gradient(135deg, #060c06 0%, #0d1a0d 50%, #0a0f0a 100%)',
-          minHeight: '380px',
+          minHeight: '320px',
         }}
       >
         {/* Green radial glow */}
@@ -194,13 +202,13 @@ export default function PlayerProfile({ data }) {
           style={{ background: 'radial-gradient(ellipse, #006633 0%, transparent 70%)' }}
         />
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
           {/* Back nav */}
-          <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center justify-between mb-6 sm:mb-8">
             <Link
               to="/roster"
               className="font-display font-bold uppercase tracking-widest text-sm flex items-center gap-2 hover:opacity-80 transition-opacity"
-              style={{ color: '#4ade80' }}
+              style={{ color: '#4ade80', minHeight: '44px', display: 'flex', alignItems: 'center' }}
             >
               ← Back to Roster
             </Link>
@@ -208,8 +216,8 @@ export default function PlayerProfile({ data }) {
               {prevPlayer && (
                 <button
                   onClick={() => navigate(`/player/${prevPlayer.id}`)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-sm font-semibold transition-all hover:border-yellow-400/50"
-                  style={{ borderColor: '#1e2e1e', color: '#9ca3af', backgroundColor: '#111811' }}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-semibold transition-all hover:border-yellow-400/50"
+                  style={{ borderColor: '#1e2e1e', color: '#9ca3af', backgroundColor: '#111811', minHeight: '44px' }}
                   title={prevPlayer.name}
                 >
                   ‹ #{prevPlayer.number}
@@ -218,8 +226,8 @@ export default function PlayerProfile({ data }) {
               {nextPlayer && (
                 <button
                   onClick={() => navigate(`/player/${nextPlayer.id}`)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-sm font-semibold transition-all hover:border-yellow-400/50"
-                  style={{ borderColor: '#1e2e1e', color: '#9ca3af', backgroundColor: '#111811' }}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-semibold transition-all hover:border-yellow-400/50"
+                  style={{ borderColor: '#1e2e1e', color: '#9ca3af', backgroundColor: '#111811', minHeight: '44px' }}
                   title={nextPlayer.name}
                 >
                   #{nextPlayer.number} ›
@@ -228,13 +236,13 @@ export default function PlayerProfile({ data }) {
             </div>
           </div>
 
-          {/* Player hero content */}
-          <div className="flex flex-col md:flex-row items-center md:items-end gap-6 md:gap-10">
+          {/* Player hero content — stack vertically on mobile, horizontal on md+ */}
+          <div className="flex flex-col items-center text-center md:flex-row md:items-end md:text-left gap-6 md:gap-10">
             {/* Jersey number (large background) */}
             <div className="relative">
               <div
                 className="absolute -left-4 -top-4 font-display font-black text-green-900/30 pointer-events-none select-none"
-                style={{ fontSize: 'clamp(8rem, 20vw, 14rem)', lineHeight: 1 }}
+                style={{ fontSize: 'clamp(6rem, 15vw, 14rem)', lineHeight: 1 }}
                 aria-hidden="true"
               >
                 {player.number}
@@ -248,8 +256,8 @@ export default function PlayerProfile({ data }) {
                     alt={player.name}
                     className="rounded-2xl object-cover object-top border-2"
                     style={{
-                      width: 'clamp(120px, 20vw, 200px)',
-                      height: 'clamp(140px, 24vw, 240px)',
+                      width: 'clamp(100px, 18vw, 200px)',
+                      height: 'clamp(120px, 22vw, 240px)',
                       borderColor: '#006633',
                     }}
                     onError={(e) => {
@@ -261,12 +269,12 @@ export default function PlayerProfile({ data }) {
                 <div
                   className="rounded-2xl items-center justify-center font-black border-2"
                   style={{
-                    width: 'clamp(120px, 20vw, 200px)',
-                    height: 'clamp(140px, 24vw, 240px)',
+                    width: 'clamp(100px, 18vw, 200px)',
+                    height: 'clamp(120px, 22vw, 240px)',
                     backgroundColor: '#006633',
                     borderColor: '#004d26',
                     color: '#FFD700',
-                    fontSize: 'clamp(2.5rem, 5vw, 4rem)',
+                    fontSize: 'clamp(2rem, 4vw, 4rem)',
                     display: player.headshot_url ? 'none' : 'flex',
                   }}
                 >
@@ -275,8 +283,8 @@ export default function PlayerProfile({ data }) {
               </div>
             </div>
 
-            {/* Player info */}
-            <div className="text-center md:text-left relative z-10 pb-2">
+            {/* Player info — centered on mobile */}
+            <div className="relative z-10 pb-2 w-full md:w-auto">
               {/* Number badge */}
               <div
                 className="inline-flex items-center gap-1 font-display font-black uppercase tracking-widest mb-2 text-sm px-3 py-1 rounded-full"
@@ -287,14 +295,14 @@ export default function PlayerProfile({ data }) {
 
               {/* Name */}
               <h1
-                className="font-display font-black uppercase tracking-wide leading-none mb-4 text-white"
-                style={{ fontSize: 'clamp(2rem, 6vw, 4.5rem)' }}
+                className="font-display font-black uppercase tracking-wide leading-none mb-3 sm:mb-4 text-white"
+                style={{ fontSize: 'clamp(1.75rem, 6vw, 4.5rem)' }}
               >
                 {player.name}
               </h1>
 
               {/* Tags */}
-              <div className="flex flex-wrap gap-3 justify-center md:justify-start mb-4">
+              <div className="flex flex-wrap gap-2 sm:gap-3 justify-center md:justify-start mb-3 sm:mb-4">
                 {player.positions && (
                   <span
                     className="px-3 py-1 rounded-full text-sm font-bold"
@@ -324,7 +332,7 @@ export default function PlayerProfile({ data }) {
               </div>
 
               {/* School */}
-              <div className="text-gray-500 text-sm font-display uppercase tracking-widest">
+              <div className="text-gray-500 text-xs sm:text-sm font-display uppercase tracking-widest">
                 Nova High School · Davie, FL · Spring 2026
               </div>
             </div>
@@ -333,27 +341,27 @@ export default function PlayerProfile({ data }) {
       </div>
 
       {/* ── Stats ─────────────────────────────────────────────── */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-8 sm:space-y-10">
         {/* Batting Stats */}
         {batting ? (
           <div>
-            <div className="flex items-center gap-3 mb-6">
+            <div className="flex items-center gap-3 mb-4 sm:mb-6">
               <div className="w-1 h-7 rounded" style={{ backgroundColor: '#FFD700' }} />
-              <h2 className="font-display font-black uppercase tracking-widest text-lg" style={{ color: '#FFD700' }}>
+              <h2 className="font-display font-black uppercase tracking-widest text-base sm:text-lg" style={{ color: '#FFD700' }}>
                 ⚾ Batting Stats
               </h2>
             </div>
 
-            {/* Key rate stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+            {/* Key rate stats — 2 cols on mobile, 4 on md */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3 mb-4 sm:mb-6">
               <StatBox label="AVG" value={batting.ba || '.000'} large highlight />
               <StatBox label="OBP" value={batting.obp || '.000'} large highlight />
               <StatBox label="SLG" value={batting.slg || '.000'} large highlight />
               <StatBox label="OPS" value={batting.ops || '.000'} large highlight />
             </div>
 
-            {/* Counting stats */}
-            <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-11 gap-2">
+            {/* Counting stats — 3 cols on mobile, 6 on sm, 11 on md */}
+            <div className="grid grid-cols-3 sm:grid-cols-6 md:grid-cols-11 gap-1.5 sm:gap-2">
               <StatBox label="GP" value={batting.gp} />
               <StatBox label="AB" value={batting.ab} />
               <StatBox label="R" value={batting.r} />
@@ -369,7 +377,7 @@ export default function PlayerProfile({ data }) {
           </div>
         ) : (
           <div
-            className="rounded-2xl p-8 text-center border"
+            className="rounded-2xl p-6 sm:p-8 text-center border"
             style={{ backgroundColor: '#111811', borderColor: '#1e2e1e' }}
           >
             <div className="text-3xl mb-2">⚾</div>
@@ -382,15 +390,15 @@ export default function PlayerProfile({ data }) {
         {/* Pitching Stats */}
         {hasPitching && (
           <div>
-            <div className="flex items-center gap-3 mb-6">
+            <div className="flex items-center gap-3 mb-4 sm:mb-6">
               <div className="w-1 h-7 rounded" style={{ backgroundColor: '#FFD700' }} />
-              <h2 className="font-display font-black uppercase tracking-widest text-lg" style={{ color: '#FFD700' }}>
+              <h2 className="font-display font-black uppercase tracking-widest text-base sm:text-lg" style={{ color: '#FFD700' }}>
                 🔥 Pitching Stats
               </h2>
             </div>
 
-            {/* Key rate stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+            {/* Key rate stats — 2 cols on mobile, 4 on md */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3 mb-4 sm:mb-6">
               <StatBox label="ERA" value={pitching.era || '0.00'} large highlight />
               <StatBox label="WHIP" value={pitching.whip || '0.00'} large highlight />
               <StatBox label="W-L" value={`${pitching.w || 0}-${pitching.l || 0}`} large highlight />
@@ -398,7 +406,7 @@ export default function PlayerProfile({ data }) {
             </div>
 
             {/* Counting stats */}
-            <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
+            <div className="grid grid-cols-3 sm:grid-cols-7 gap-1.5 sm:gap-2">
               <StatBox label="APP" value={pitching.app} />
               <StatBox label="IP" value={pitching.ip} />
               <StatBox label="H" value={pitching.h} />
@@ -412,10 +420,10 @@ export default function PlayerProfile({ data }) {
 
         {/* Game Photos Section — player-specific */}
         <div>
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between mb-4 sm:mb-6">
             <div className="flex items-center gap-3">
               <div className="w-1 h-7 rounded" style={{ backgroundColor: '#FFD700' }} />
-              <h2 className="font-display font-black uppercase tracking-widest text-lg" style={{ color: '#FFD700' }}>
+              <h2 className="font-display font-black uppercase tracking-widest text-base sm:text-lg" style={{ color: '#FFD700' }}>
                 📷 Action Shots
               </h2>
             </div>
@@ -429,7 +437,8 @@ export default function PlayerProfile({ data }) {
           </div>
 
           {gamesWithPlayerPhotos.length > 0 ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+            // 2 columns on mobile, 3 on sm, 4 on md
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-3">
               {gamesWithPlayerPhotos.map((game) => (
                 <GameGalleryCard
                   key={game.id}
@@ -441,7 +450,7 @@ export default function PlayerProfile({ data }) {
             </div>
           ) : (
             <div
-              className="rounded-2xl p-10 text-center border"
+              className="rounded-2xl p-8 sm:p-10 text-center border"
               style={{ backgroundColor: '#111811', borderColor: '#1e2e1e' }}
             >
               <div className="text-4xl mb-3">📸</div>
@@ -455,41 +464,43 @@ export default function PlayerProfile({ data }) {
           )}
         </div>
 
-        {/* Browse other players */}
+        {/* Browse other players — full-width prev/next on mobile */}
         <div
-          className="rounded-2xl p-6 border flex flex-col md:flex-row items-center justify-between gap-4"
+          className="rounded-2xl p-4 sm:p-6 border"
           style={{ backgroundColor: '#111811', borderColor: '#1e2e1e' }}
         >
-          <div>
-            <div className="font-display font-black text-white text-lg uppercase tracking-widest">
+          <div className="mb-4">
+            <div className="font-display font-black text-white text-base sm:text-lg uppercase tracking-widest">
               Browse the Roster
             </div>
             <div className="text-gray-500 text-sm mt-1">
               View all {players.length} players on the 2026 Nova Titans
             </div>
           </div>
-          <div className="flex items-center gap-3">
+
+          {/* Full-width buttons on mobile */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
             {prevPlayer && (
               <button
                 onClick={() => navigate(`/player/${prevPlayer.id}`)}
-                className="font-display font-bold uppercase tracking-widest px-4 py-2 rounded-lg text-sm border transition-all hover:border-yellow-400/50"
-                style={{ borderColor: '#1e2e1e', color: '#9ca3af', backgroundColor: '#0a0f0a' }}
+                className="font-display font-bold uppercase tracking-widest px-4 py-3 sm:py-2 rounded-lg text-sm border transition-all hover:border-yellow-400/50 flex-1 sm:flex-none text-center"
+                style={{ borderColor: '#1e2e1e', color: '#9ca3af', backgroundColor: '#0a0f0a', minHeight: '44px' }}
               >
                 ‹ {prevPlayer.name.split(' ')[0]}
               </button>
             )}
             <Link
               to="/roster"
-              className="font-display font-bold uppercase tracking-widest px-5 py-2 rounded-lg text-sm"
-              style={{ backgroundColor: '#006633', color: '#FFD700' }}
+              className="font-display font-bold uppercase tracking-widest px-5 py-3 sm:py-2 rounded-lg text-sm flex-1 sm:flex-none text-center"
+              style={{ backgroundColor: '#006633', color: '#FFD700', minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             >
               All Players
             </Link>
             {nextPlayer && (
               <button
                 onClick={() => navigate(`/player/${nextPlayer.id}`)}
-                className="font-display font-bold uppercase tracking-widest px-4 py-2 rounded-lg text-sm border transition-all hover:border-yellow-400/50"
-                style={{ borderColor: '#1e2e1e', color: '#9ca3af', backgroundColor: '#0a0f0a' }}
+                className="font-display font-bold uppercase tracking-widest px-4 py-3 sm:py-2 rounded-lg text-sm border transition-all hover:border-yellow-400/50 flex-1 sm:flex-none text-center"
+                style={{ borderColor: '#1e2e1e', color: '#9ca3af', backgroundColor: '#0a0f0a', minHeight: '44px' }}
               >
                 {nextPlayer.name.split(' ')[0]} ›
               </button>
