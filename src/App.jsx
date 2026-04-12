@@ -7,6 +7,10 @@ import Gallery from './pages/Gallery'
 import SchedulePage from './pages/SchedulePage'
 import StatsPage from './pages/StatsPage'
 import PlayerProfile from './pages/PlayerProfile'
+import Terms from './pages/Terms'
+import Privacy from './pages/Privacy'
+import PhotoPolicy from './pages/PhotoPolicy'
+import RefundPolicy from './pages/RefundPolicy'
 import { fetchAllData } from './lib/queries'
 
 function LoadingScreen() {
@@ -97,6 +101,10 @@ export default function App() {
           <Route path="/schedule" element={<SchedulePage data={pageData} />} />
           <Route path="/stats" element={<StatsPage data={pageData} />} />
           <Route path="/player/:id" element={<PlayerProfile data={pageData} />} />
+          <Route path="/terms" element={<Terms />} />
+          <Route path="/privacy" element={<Privacy />} />
+          <Route path="/photo-policy" element={<PhotoPolicy />} />
+          <Route path="/refund-policy" element={<RefundPolicy />} />
         </Routes>
       </Layout>
     </BrowserRouter>
