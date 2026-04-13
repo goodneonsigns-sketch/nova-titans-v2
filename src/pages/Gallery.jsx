@@ -1,10 +1,17 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import GameCard from '../components/GameCard'
 import Lightbox from '../components/Lightbox'
+import { fetchPhotos } from '../lib/queries'
 
 export default function Gallery({ data }) {
-  const { games, photos } = data
+  const { games } = data
+  const [photos, setPhotos] = useState([])
+  const [loading, setLoading] = useState(true)
   const [lightbox, setLightbox] = useState(null)
+
+  useEffect(() => {
+    fetchPhotos().then(p => { setPhotos(p); setLoading(false) })
+  }, [])
 
   const getGamePhotos = (gameId) => photos.filter(p => p.game_id === gameId)
   const gamesWithPhotos = games.filter(g => getGamePhotos(g.id).length > 0)
