@@ -50,8 +50,8 @@ export default async function handler(req, res) {
         },
       ],
       mode: 'payment',
-      success_url: `${req.headers.origin || 'https://nova-titans-v2.vercel.app'}/order-success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${req.headers.origin || 'https://nova-titans-v2.vercel.app'}/gallery`,
+      success_url: `${req.headers.origin || 'https://novatitansphotos.com'}/order-success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${req.headers.origin || 'https://novatitansphotos.com'}/gallery`,
       metadata: {
         photo_id: String(photoId),
         print_size: printSize,

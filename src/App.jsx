@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { AuthProvider } from './contexts/AuthContext'
 import Layout from './components/Layout'
 import Home from './pages/Home'
 import Roster from './pages/Roster'
@@ -11,6 +12,7 @@ import Terms from './pages/Terms'
 import Privacy from './pages/Privacy'
 import PhotoPolicy from './pages/PhotoPolicy'
 import RefundPolicy from './pages/RefundPolicy'
+import OrderSuccess from './pages/OrderSuccess'
 import { fetchAllData } from './lib/queries'
 
 function LoadingScreen() {
@@ -55,7 +57,7 @@ const EMPTY_DATA = {
   errors: [],
 }
 
-export default function App() {
+function AppRoutes() {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [fatalError, setFatalError] = useState(null)
@@ -92,21 +94,30 @@ export default function App() {
   const pageData = data || EMPTY_DATA
 
   return (
+    <Layout>
+      <Routes>
+        <Route path="/" element={<Home data={pageData} />} />
+        <Route path="/roster" element={<Roster data={pageData} />} />
+        <Route path="/gallery" element={<Gallery data={pageData} />} />
+        <Route path="/schedule" element={<SchedulePage data={pageData} />} />
+        <Route path="/stats" element={<StatsPage data={pageData} />} />
+        <Route path="/player/:id" element={<PlayerProfile data={pageData} />} />
+        <Route path="/terms" element={<Terms />} />
+        <Route path="/privacy" element={<Privacy />} />
+        <Route path="/photo-policy" element={<PhotoPolicy />} />
+        <Route path="/refund-policy" element={<RefundPolicy />} />
+        <Route path="/order-success" element={<OrderSuccess />} />
+      </Routes>
+    </Layout>
+  )
+}
+
+export default function App() {
+  return (
     <BrowserRouter>
-      <Layout>
-        <Routes>
-          <Route path="/" element={<Home data={pageData} />} />
-          <Route path="/roster" element={<Roster data={pageData} />} />
-          <Route path="/gallery" element={<Gallery data={pageData} />} />
-          <Route path="/schedule" element={<SchedulePage data={pageData} />} />
-          <Route path="/stats" element={<StatsPage data={pageData} />} />
-          <Route path="/player/:id" element={<PlayerProfile data={pageData} />} />
-          <Route path="/terms" element={<Terms />} />
-          <Route path="/privacy" element={<Privacy />} />
-          <Route path="/photo-policy" element={<PhotoPolicy />} />
-          <Route path="/refund-policy" element={<RefundPolicy />} />
-        </Routes>
-      </Layout>
+      <AuthProvider>
+        <AppRoutes />
+      </AuthProvider>
     </BrowserRouter>
   )
 }

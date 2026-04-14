@@ -1,4 +1,7 @@
+import { useState, useRef, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
+import { useAuth } from '../contexts/AuthContext'
+import AuthModal from './AuthModal'
 
 const navLinks = [
   { href: '/', label: 'Home' },
@@ -26,8 +29,79 @@ const affiliations = [
 
 const paymentMethods = ['Visa', 'Mastercard', 'Amex', 'Discover', 'Apple Pay', 'Google Pay']
 
+function UserMenu({ user, onSignOut }) {
+  const [open, setOpen] = useState(false)
+  const menuRef = useRef(null)
+  const displayName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'Account'
+  const initials = displayName
+    .split(' ')
+    .slice(0, 2)
+    .map(n => n[0])
+    .join('')
+    .toUpperCase()
+
+  useEffect(() => {
+    const handleClick = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [])
+
+  return (
+    <div className="relative" ref={menuRef}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors hover:bg-green-900/20"
+        style={{ minHeight: '44px' }}
+      >
+        <div
+          className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
+          style={{ backgroundColor: '#006633', color: '#FFD700' }}
+        >
+          {initials || '?'}
+        </div>
+        <span className="text-sm text-gray-300 hidden sm:block max-w-[120px] truncate">{displayName}</span>
+        <span className="text-gray-500 text-xs">▾</span>
+      </button>
+
+      {open && (
+        <div
+          className="absolute right-0 top-full mt-1 w-44 rounded-xl border border-green-900/40 shadow-xl z-50 overflow-hidden py-1"
+          style={{ backgroundColor: '#0f1a0f' }}
+        >
+          <div className="px-4 py-2 border-b border-green-900/20">
+            <p className="text-xs text-gray-500 truncate">{user.email}</p>
+          </div>
+          <Link
+            to="/order-success"
+            onClick={() => setOpen(false)}
+            className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-300 hover:text-white hover:bg-green-900/20 transition-colors"
+          >
+            📦 My Orders
+          </Link>
+          <button
+            onClick={() => { setOpen(false); onSignOut() }}
+            className="flex items-center gap-2 w-full px-4 py-2.5 text-sm text-gray-300 hover:text-red-300 hover:bg-red-900/10 transition-colors text-left"
+          >
+            🚪 Sign Out
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function Layout({ children }) {
   const location = useLocation()
+  const { user, loading, signOut } = useAuth()
+  const [showAuthModal, setShowAuthModal] = useState(false)
+
+  const handleSignOut = async () => {
+    await signOut()
+  }
 
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: '#0a0f0a' }}>
@@ -47,22 +121,65 @@ export default function Layout({ children }) {
               </div>
             </Link>
 
-            {/* Desktop Nav only */}
-            <nav className="hidden md:flex items-center gap-1">
-              {navLinks.map(link => (
-                <Link
-                  key={link.href}
-                  to={link.href}
-                  className={`px-4 py-2 rounded-md text-sm font-semibold tracking-wide transition-colors font-display uppercase ${
-                    location.pathname === link.href
-                      ? 'text-yellow-400 bg-green-900/40'
-                      : 'text-gray-300 hover:text-white hover:bg-green-900/20'
-                  }`}
-                >
-                  {link.label}
-                </Link>
-              ))}
-            </nav>
+            {/* Desktop Nav + User Menu */}
+            <div className="hidden md:flex items-center gap-1">
+              <nav className="flex items-center gap-1">
+                {navLinks.map(link => (
+                  <Link
+                    key={link.href}
+                    to={link.href}
+                    className={`px-4 py-2 rounded-md text-sm font-semibold tracking-wide transition-colors font-display uppercase ${
+                      location.pathname === link.href
+                        ? 'text-yellow-400 bg-green-900/40'
+                        : 'text-gray-300 hover:text-white hover:bg-green-900/20'
+                    }`}
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+              </nav>
+
+              {/* Auth section — desktop */}
+              <div className="ml-3 pl-3 border-l border-green-900/40">
+                {!loading && (
+                  user ? (
+                    <UserMenu user={user} onSignOut={handleSignOut} />
+                  ) : (
+                    <button
+                      onClick={() => setShowAuthModal(true)}
+                      className="px-4 py-2 rounded-md text-sm font-display font-bold uppercase tracking-wider transition-colors border"
+                      style={{ borderColor: '#FFD700', color: '#FFD700', minHeight: '44px' }}
+                      onMouseEnter={e => {
+                        e.currentTarget.style.backgroundColor = 'rgba(255,215,0,0.08)'
+                      }}
+                      onMouseLeave={e => {
+                        e.currentTarget.style.backgroundColor = 'transparent'
+                      }}
+                    >
+                      Sign In
+                    </button>
+                  )
+                )}
+              </div>
+            </div>
+
+            {/* Mobile: Sign In icon in header (only when not logged in) */}
+            <div className="md:hidden">
+              {!loading && (
+                user ? (
+                  <UserMenu user={user} onSignOut={handleSignOut} />
+                ) : (
+                  <button
+                    onClick={() => setShowAuthModal(true)}
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-display font-bold uppercase tracking-wider border transition-colors"
+                    style={{ borderColor: '#FFD700', color: '#FFD700', minHeight: '44px' }}
+                  >
+                    <span>👤</span>
+                    <span>Sign In</span>
+                  </button>
+                )
+              )}
+            </div>
           </div>
         </div>
       </header>
@@ -313,6 +430,11 @@ export default function Layout({ children }) {
         </div>
 
       </footer>
+
+      {/* Auth Modal */}
+      {showAuthModal && (
+        <AuthModal onClose={() => setShowAuthModal(false)} />
+      )}
     </div>
   )
 }
