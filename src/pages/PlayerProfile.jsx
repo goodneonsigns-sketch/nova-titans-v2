@@ -101,7 +101,7 @@ function GameGalleryCard({ game, photos, onPhotoClick }) {
 export default function PlayerProfile({ data }) {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { players, battingStats, pitchingStats, seasons, games } = data
+  const { players, battingStats, pitchingStats, fieldingStats, seasons, games } = data
   const [photos, setPhotos] = useState([])
 
   const currentSeason = seasons.find((s) => s.is_current) || seasons[0]
@@ -143,6 +143,9 @@ export default function PlayerProfile({ data }) {
 
   const batting = battingStats?.find(
     (s) => s.player_id === player.id && s.season_id === currentSeason?.id
+  )
+  const fielding = fieldingStats?.find(
+    (s) => s.player_id === player?.id && s.season_id === currentSeason?.id
   )
   const pitching = pitchingStats?.find(
     (s) => s.player_id === player.id && s.season_id === currentSeason?.id
@@ -414,6 +417,28 @@ export default function PlayerProfile({ data }) {
               <StatBox label="ER" value={pitching.er} />
               <StatBox label="BB" value={pitching.bb} />
               <StatBox label="K" value={pitching.k} />
+            </div>
+          </div>
+        )}
+
+        {/* Fielding / Baserunning Stats */}
+        {fielding && fielding.sb > 0 && (
+          <div>
+            <div className="flex items-center gap-3 mb-4 sm:mb-6">
+              <div className="w-1 h-7 rounded" style={{ backgroundColor: '#FFD700' }} />
+              <h2 className="font-display font-black uppercase tracking-widest text-base sm:text-lg" style={{ color: '#FFD700' }}>
+                🧤 Fielding & Baserunning
+              </h2>
+            </div>
+            <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-3">
+              <StatBox label="SB" value={fielding.sb} large highlight />
+              <StatBox label="SBA" value={fielding.sba} large />
+              <StatBox label="SB%" value={fielding.sbp || '.000'} large highlight />
+              {fielding.po > 0 && <StatBox label="PO" value={fielding.po} />}
+              {fielding.a > 0 && <StatBox label="A" value={fielding.a} />}
+              {fielding.e > 0 && <StatBox label="E" value={fielding.e} />}
+              {fielding.dp > 0 && <StatBox label="DP" value={fielding.dp} />}
+              {fielding.fp && fielding.fp !== '0' && <StatBox label="FP" value={fielding.fp} />}
             </div>
           </div>
         )}

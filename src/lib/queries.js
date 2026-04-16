@@ -12,6 +12,7 @@ export async function fetchAllData() {
     playersRes,
     battingRes,
     pitchingRes,
+    fieldingRes,
     articlesRes,
   ] = await Promise.all([
     supabase.from('team_info').select('*'),
@@ -20,6 +21,7 @@ export async function fetchAllData() {
     supabase.from('players').select('*').order('number', { ascending: true }),
     supabase.from('batting_stats').select('*'),
     supabase.from('pitching_stats').select('*'),
+    supabase.from('fielding_stats').select('*'),
     supabase.from('articles').select('*').order('date', { ascending: false }),
   ])
 
@@ -38,6 +40,7 @@ export async function fetchAllData() {
     players: playersRes.data || [],
     battingStats: battingRes.data || [],
     pitchingStats: pitchingRes.data || [],
+    fieldingStats: fieldingRes.data || [],
     photos: [], // loaded lazily via fetchPhotos()
     articles: articlesRes.data || [],
     errors: [
@@ -47,6 +50,7 @@ export async function fetchAllData() {
       playersRes.error,
       battingRes.error,
       pitchingRes.error,
+      fieldingRes.error,
       // articles error is non-fatal
     ].filter(Boolean),
   }
